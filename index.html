@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etiquetas de Almacén</title>
+<style>
+  :root{
+    --bg:#eef1f4; --panel:#fff; --ink:#1d2530; --muted:#667085; --line:#d9dee5;
+    --accent:#7a1f3d; --accent-2:#9b2c51; --accent-soft:#f6e9ee; --ok:#1f7a4d; --danger:#b42318;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--ink);font:14px/1.4 "Segoe UI",system-ui,Arial,sans-serif}
+  .hidden{display:none!important}
+  button{font:inherit;cursor:pointer}
+  input,select{font:inherit;color:inherit}
+
+  /* ---------- Login ---------- */
+  #login{min-height:100%;display:grid;place-items:center;padding:16px;
+    background:linear-gradient(135deg,#7a1f3d 0%,#4a1326 100%)}
+  .login-card{width:100%;max-width:360px;background:#fff;border-radius:14px;padding:28px 26px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35)}
+  .login-card h1{margin:0 0 4px;font-size:20px}
+  .login-card p.sub{margin:0 0 20px;color:var(--muted)}
+  .field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+  .field label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .field input,.field select{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:#fff}
+  .field input:focus,.field select:focus,.search input:focus{outline:2px solid var(--accent-2);outline-offset:-1px;border-color:transparent}
+  .btn{height:38px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font-weight:600}
+  .btn:hover{background:#f7f8fa}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-2)}
+  .btn.block{width:100%}
+  .btn.sm{height:30px;padding:0 10px;font-size:13px}
+  .err{color:var(--danger);font-size:13px;min-height:18px;margin:-4px 0 10px}
+  .hint{margin-top:16px;font-size:12px;color:var(--muted);text-align:center}
+
+  /* ---------- App ---------- */
+  #app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  header.top{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--accent);color:#fff}
+  header.top .brand{font-weight:700;font-size:16px;flex:1;display:flex;align-items:center;gap:10px}
+  header.top .who{font-size:13px;opacity:.9}
+  header.top .btn{background:transparent;color:#fff;border-color:rgba(255,255,255,.4);height:32px}
+  header.top .btn:hover{background:rgba(255,255,255,.12)}
+  main{flex:1;display:grid;grid-template-columns:minmax(300px,420px) 1fr;grid-template-rows:minmax(0,1fr);gap:16px;padding:16px;min-height:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;min-height:0}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0;padding:14px 16px 0}
+  .search{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
+  .seg button{flex:1;border:0;background:#fff;height:32px;font-size:13px;font-weight:600;color:var(--muted)}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button.on{background:var(--accent-soft);color:var(--accent)}
+  .search input{width:100%;height:40px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font-size:15px}
+  .count{font-size:12px;color:var(--muted);margin-top:8px}
+  .results{flex:1;overflow:auto;min-height:0}
+  .res{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #eef0f3;background:#fff;padding:9px 16px}
+  .res:hover{background:#fafbfc}
+  .res.sel{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+  .res .k{font-family:Consolas,monospace;font-size:13px;color:var(--accent);font-weight:700}
+  .res .d{font-size:13px}
+  .res .k{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .res .um{font-family:system-ui,Arial,sans-serif;font-size:11px;font-weight:600;letter-spacing:.03em;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:1px 8px}
+  mark{background:#ffe58a;color:inherit;padding:0}
+
+  .work{display:grid;grid-template-rows:minmax(0,1fr) auto;gap:16px;min-height:0}
+  .preview{overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;
+    background:repeating-conic-gradient(#f3f4f6 0 25%,#fff 0 50%) 0 0/20px 20px}
+  .preview .cap{font-size:12px;color:var(--muted);margin-top:12px}
+  .controls{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px 14px;align-items:end}
+  .controls .field{margin-bottom:10px}
+  .controls .actions{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+  .chk{display:flex;align-items:center;gap:8px;height:38px;margin-bottom:10px;font-size:13px}
+  .empty{color:var(--muted);text-align:center;padding:40px 16px}
+
+  dialog{border:0;border-radius:12px;padding:0;width:min(560px,calc(100vw - 32px));box-shadow:0 20px 50px rgba(0,0,0,.3)}
+  dialog::backdrop{background:rgba(15,20,30,.5)}
+  .btn.danger{color:#b3261e;border-color:#e3b4b0}
+  .dlg-h{padding:16px 20px;border-bottom:1px solid var(--line);font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  .dlg-b{padding:18px 20px;max-height:70vh;overflow:auto}
+  .dlg-f{padding:12px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+  table.users{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px}
+  table.users td,table.users th{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+  .note{font-size:12px;color:var(--muted)}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1d2530;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:50}
+
+  @media (max-width:820px){ #app{height:auto;min-height:100vh;overflow:visible} main{grid-template-columns:1fr;grid-template-rows:auto} .results{max-height:320px} .preview{min-height:300px} }
+
+  /* ================= ETIQUETA ================= */
+  .lbl{position:relative;background:#fff;color:#000;container-type:size;overflow:hidden}
+  .preview .lbl{box-shadow:0 4px 18px rgba(0,0,0,.18)}
+  .lbl-rot{position:absolute;left:0;top:0;transform-origin:0 0}
+  .lbl-in{
+    /* unidad base: 1% del ancho de referencia (proporción 70.4 x 50.6) */
+    --u:min(1cqw, calc(1cqh * 1.391));
+    position:absolute;inset:4.5cqh 3.5cqw;
+    border:max(1px,calc(var(--u)*.38)) solid #000;
+    display:flex;flex-direction:column;
+    padding:calc(var(--u)*1.6) calc(var(--u)*2.2) calc(var(--u)*2);
+    font-family:Arial,Helvetica,sans-serif;
+  }
+  .l-alm{align-self:flex-end;font-size:calc(var(--u)*3*var(--ka,1));letter-spacing:-.02em;line-height:1;margin-right:calc(var(--u)*.6);
+    font-family:"Arial Narrow",Arial,sans-serif;color:#222}
+  .l-head{display:flex;align-items:center;gap:calc(var(--u)*3);margin-top:calc(var(--u)*.6)}
+  .l-logo{width:calc(var(--u)*17);height:calc(var(--u)*9);margin-left:calc(var(--u)*5);display:flex;align-items:center;justify-content:center;flex:none}
+  .l-logo img{width:100%;height:100%;object-fit:fill}.l-logo svg{max-width:100%;max-height:100%}
+  .l-bar{flex:1;background:#cfcfcf;display:flex;align-items:center;height:calc(var(--u)*6);padding-left:calc(var(--u)*.6);min-width:0}
+  .l-mat{font-size:calc(var(--u)*2.7);font-family:Calibri,Carlito,Arial,sans-serif;color:#333;margin-right:calc(var(--u)*5.6)}
+  .l-num{font-size:calc(var(--u)*5.6);font-weight:700;font-family:Calibri,Carlito,Arial,sans-serif;letter-spacing:.01em;white-space:nowrap;line-height:1}
+  .l-dt{text-align:center;font-size:calc(var(--u)*3.9*var(--kt,1));font-family:Calibri,Carlito,Arial,sans-serif;color:#333;margin-top:calc(var(--u)*1.7);letter-spacing:.02em}
+  .l-desc{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;min-height:0;overflow:hidden;padding:calc(var(--u)*1) calc(var(--u)*1)}
+  .l-desc span{--fd:1;font-size:calc(var(--u)*4.6*var(--fd));font-weight:900;letter-spacing:.09em;line-height:1.55;text-transform:uppercase;word-break:normal;overflow-wrap:normal;hyphens:none}
+  .l-desc .nb{white-space:nowrap}
+  .lbl-in.cf,.lbl-in.cf *{font-family:var(--ff)!important}
+  .lbl-in.bold *{font-weight:700}
+  .lbl-in.bold .l-desc span{font-weight:900}
+  .field input[type=range]{height:24px;padding:0;border:0;background:transparent;accent-color:var(--accent)}
+  .field label b{color:var(--accent);margin-left:4px}
+  .fsr{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin:2px 0 -2px}
+  .fsr button{border:0;background:none;color:var(--accent);cursor:pointer;font-weight:600;font-size:12px}
+  .l-foot{display:flex;align-items:center;padding:0 calc(var(--u)*1) calc(var(--u)*3) calc(var(--u)*12)}
+  .l-env{font-size:calc(var(--u)*7.6);font-weight:700;font-family:Calibri,Carlito,Arial,sans-serif;line-height:1;flex:1;white-space:nowrap}
+  .l-um{font-size:calc(var(--u)*4.9*var(--ku,1));font-weight:700;font-family:Calibri,Carlito,Arial,sans-serif;margin-right:calc(var(--u)*5.5)}
+  .l-umv{font-size:calc(var(--u)*4.9*var(--ku,1));font-family:Calibri,Carlito,Arial,sans-serif;margin-right:calc(var(--u)*13);white-space:nowrap}
+  /* Etiqueta individual: sin leyenda ENVASE y U/M centrado */
+  .lbl-in.ind .l-env{display:none}
+  .lbl-in.ind .l-foot{justify-content:center;padding-left:calc(var(--u)*1)}
+  .lbl-in.ind .l-um{margin-right:calc(var(--u)*3)}
+  .lbl-in.ind .l-umv{margin-right:0}
+  .seg.tipo{margin:0;height:38px}
+  .seg.tipo button{height:100%}
+
+  /* ================= IMPRESIÓN ================= */
+  #printArea{display:none}
+  @media print{
+    html,body{background:#fff;height:auto}
+    #login,#app,dialog,.toast{display:none!important}
+    #printArea{display:block}
+    .logo-ph{visibility:hidden}
+    #printArea .lbl{break-after:page;page-break-after:always}
+    #printArea .lbl:last-child{break-after:auto;page-break-after:auto}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+<style id="pageStyle"></style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+  <form class="login-card" id="loginForm" autocomplete="off">
+    <h1>Etiquetas de Almacén</h1>
+    <p class="sub">Inicia sesión para continuar</p>
+    <div class="field"><label for="lu">Usuario</label><input id="lu" required autofocus></div>
+    <div class="field"><label for="lp">Contraseña</label><input id="lp" type="password" required></div>
+    <div class="err" id="lerr"></div>
+    <button class="btn primary block" type="submit">Entrar</button>
+    <div class="hint" id="lhint">Primera vez: usuario <b>admin</b>, contraseña <b>admin123</b></div>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="hidden">
+  <header class="top">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>
+      Etiquetas de Almacén
+    </div>
+    <span class="who" id="who"></span>
+    <button class="btn sm" id="bUsers">Usuarios</button>
+    <button class="btn sm" id="bConfig">Configuración</button>
+    <button class="btn sm" id="bLogout">Salir</button>
+  </header>
+
+  <main>
+    <div class="panel">
+      <h2>Buscar material</h2>
+      <div class="search">
+        <div class="seg" id="seg">
+          <button data-m="todo" class="on">Todo</button>
+          <button data-m="clave">Por clave</button>
+          <button data-m="desc">Por descripción</button>
+        </div>
+        <input id="q" placeholder="Escribe la clave o la descripción…" autocomplete="off">
+        <div class="count" id="count"></div>
+      </div>
+      <div class="results" id="results"></div>
+    </div>
+
+    <div class="work">
+      <div class="panel preview" id="preview"><div class="empty">Selecciona un material para ver la etiqueta</div></div>
+      <div class="panel">
+        <div class="controls">
+          <div class="field">
+            <label>Tipo de etiqueta</label>
+            <div class="seg tipo" id="tipo"><button data-t="ind">Individual</button><button data-t="master">Master</button></div>
+          </div>
+          <div class="field">
+            <label for="size">Tamaño de etiqueta</label>
+            <select id="size"></select>
+          </div>
+          <div class="field hidden" id="customW"><label for="cw">Ancho (mm)</label><input id="cw" type="number" min="20" max="200" step="0.1" value="70.4"></div>
+          <div class="field hidden" id="customH"><label for="ch">Alto (mm)</label><input id="ch" type="number" min="15" max="200" step="0.1" value="50.6"></div>
+          <label class="chk"><input type="checkbox" id="rot"> Rotar 90° (etiqueta vertical)</label>
+          <div class="field"><label for="env">Envase / presentación</label><input id="env" value="ENVASE"></div>
+          <div class="field"><label for="um">Unidad de medida (U/M)</label><input id="um" value="PIEZA" list="umList"></div>
+          <datalist id="umList"><option>PIEZA</option><option>CAJA</option><option>PAQUETE</option><option>FRASCO</option><option>SOBRE</option><option>ROLLO</option><option>LITRO</option><option>JUEGO</option><option>TUBO</option><option>BOLSA</option></datalist>
+          <div class="field"><label for="copies">Copias</label><input id="copies" type="number" min="1" max="500" value="1"></div>
+          <div class="field"><label for="font">Fuente (tipo de letra)</label><select id="font"></select></div>
+          <label class="chk"><input type="checkbox" id="bold"> Todo en negrita</label>
+          <div class="fsr"><span>TAMAÑO DE LETRA (la descripción se reduce sola si no cabe completa)</span><button type="button" id="fsReset">Restablecer</button></div>
+          <div class="field"><label>Descripción <b id="v_d"></b></label><input type="range" id="fs_d" min="50" max="160" step="5"></div>
+          <div class="field"><label>Almacén <b id="v_a"></b></label><input type="range" id="fs_a" min="50" max="220" step="5"></div>
+          <div class="field"><label>"DESCRIPCION" <b id="v_t"></b></label><input type="range" id="fs_t" min="50" max="200" step="5"></div>
+          <div class="field"><label>U/M y envase <b id="v_u"></b></label><input type="range" id="fs_u" min="50" max="160" step="5"></div>
+          <div class="actions">
+            <span class="note" id="selInfo"></span>
+            <button class="btn" id="bEdit" disabled>✎ Modificar material</button>
+            <button class="btn danger" id="bDel" disabled>🗑 Eliminar material</button>
+            <button class="btn primary" id="bPrint" disabled>
+              Imprimir etiqueta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- ============ USUARIOS ============ -->
+<dialog id="dlgUsers">
+  <div class="dlg-h">Usuarios <button class="btn sm" data-close>Cerrar</button></div>
+  <div class="dlg-b">
+    <table class="users"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th></th></tr></thead><tbody id="uBody"></tbody></table>
+    <form id="uForm" autocomplete="off">
+      <div class="row2">
+        <div class="field"><label>Usuario</label><input id="nu" required></div>
+        <div class="field"><label>Nombre</label><input id="nn" required></div>
+        <div class="field"><label>Contraseña</label><input id="np" type="password" required minlength="4"></div>
+        <div class="field"><label>Rol</label><select id="nr"><option value="0">Capturista</option><option value="1">Administrador</option></select></div>
+      </div>
+      <div class="err" id="uerr"></div>
+      <button class="btn primary" type="submit">Agregar / actualizar usuario</button>
+    </form>
+  </div>
+</dialog>
+
+<!-- ============ CONFIG ============ -->
+<dialog id="dlgMat">
+  <div class="dlg-h">Modificar material <button class="btn sm" data-close>Cerrar</button></div>
+  <div class="dlg-b">
+    <div class="field"><label for="mc">Clave (10 dígitos, con o sin guiones)</label><input id="mc" autocomplete="off"></div>
+    <div class="field"><label for="mdesc">Descripción</label><input id="mdesc" autocomplete="off"></div>
+    <div class="field"><label for="mu">Unidad de medida (U/M)</label><input id="mu" list="umList" autocomplete="off"></div>
+    <div class="err" id="mErr" style="color:#b3261e;min-height:18px"></div>
+  </div>
+  <div class="dlg-f"><button class="btn" data-close>Cancelar</button><button class="btn primary" id="mSave">Guardar cambios</button></div>
+</dialog>
+
+<dialog id="dlgConfig">
+  <div class="dlg-h">Configuración <button class="btn sm" data-close>Cerrar</button></div>
+  <div class="dlg-b">
+    <div class="field"><label>Texto superior de la etiqueta</label><input id="cfgAlm"></div>
+    <div class="field"><label>Logotipo (PNG / JPG)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="file" id="cfgLogo" accept="image/*">
+        <button class="btn sm" id="cfgLogoClear" type="button">Quitar</button>
+      </div>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <div class="field"><label>Catálogo de materiales</label>
+      <div class="note" id="catInfo" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="file" id="catFile" accept=".xlsx,.csv">
+        <button class="btn sm" id="catTpl" type="button">Descargar plantilla</button>
+        <button class="btn sm" id="catReset" type="button">Restaurar catálogo original</button>
+      </div>
+      <div class="note" style="margin-top:6px">El Excel (.xlsx) o CSV debe tener las columnas <b>Clave</b>, <b>Descripción</b> y <b>U/M</b>. Funciona sin internet. Si un material no tiene U/M se usa PIEZA.</div>
+    </div>
+  </div>
+  <div class="dlg-f"><button class="btn primary" id="cfgSave">Guardar</button></div>
+</dialog>
+
+<div id="printArea"></div>
+
+<script>
+/* ===== Catálogo base (tablerogeneral.xlsx) ===== */
+const CATALOGO_BASE = [{"c":"0600040109","d":"ABATELENGUAS DE MADERA"},{"c":"0600160154","d":"ACEITE MINERAL"},{"c":"0600340103","d":"ANTISEPTICO AGUA OXIGENADA"},{"c":"0600400543","d":"AGUJA PARA RAQUIANESTESIA"},{"c":"0600403711","d":"AGUJA HIPODERMICA 20G X 32 MM"},{"c":"0600403745","d":"AGUJA HIPODERMICA 21G X 32 MM"},{"c":"0600403760","d":"AGUJA HIPODERMICA 25G X 16 MM"},{"c":"0600403786","d":"AGUJA HIPODERMICA 22G X 32 MM"},{"c":"0600407605","d":"AGUJA PARA BIOPSIA 15.20 CM 14 G"},{"c":"0600408041","d":"AGUJA DENTAL TIPO CARPULE 20-25 MM 30G CORTA"},{"c":"0600409007","d":"AGUJA PARA RAQUIANESTESIA 8.7 A 9.1 CM 22 G"},{"c":"0600580153","d":"ALGODÓN EN LAMINAS ENROLLADO O PLISADO"},{"c":"0600640064","d":"ALEACION PARA AMALGAMA DENTAL"},{"c":"0600660039","d":"ANTISEPTICO ALCOHOL DESNATURALIZADO 1 LT"},{"c":"0600660054","d":"JABON NEUTRO ADICIONADO CON GLICERINA"},{"c":"0600660062","d":"JABON PARA USO PREQUIRURGICO"},{"c":"0600660658","d":"ANTISEPTICO IODOPOVIDONA ESPUMA"},{"c":"0600660666","d":"ANTISEPTICOS IODOPOVIDONA SOLUCION"},{"c":"0600660773","d":"ANTISEPTICO ALCOHOL DESNATURALIZADO 20 LT"},{"c":"0600660872","d":"DETERGENTE ENZIMATICO 1 A 5 LITROS"},{"c":"0600660880","d":"DESINFECTANTES DE GLUTARALDEHIDO"},{"c":"0600660906","d":"GEL ANTISEPTICO PARA MANOS 500 ML"},{"c":"0600660914","d":"ANTISEPTICOS P/LAVADO PRE Y POSTQUIRURGICO 4 LT"},{"c":"0600660922","d":"ANTISEPTICOS SOLUCION DOS HISOPOS. TUBO CON 26 ML"},{"c":"0600661011","d":"ANTISEPTICOS SOL. C/GLUCONATO DE CLORHEXIDINA DE 0.5 AL 1%. 500 ML"},{"c":"0600661052","d":"ANTISEPTICOS SOL. C/GLUCONATO DE CLOREXHIDINA AL 2%. 3 ML"},{"c":"0600661060","d":"ANTISEPTICOS SOL. C/GLUCONATO DE CLOREXHIDINA AL 2%. 26 ML"},{"c":"0600880025","d":"APOSITOS TRANSPARENTES MICROPOROSOS 10 X 12 CM"},{"c":"0600880058","d":"APOSITOS COMBINADOS DE CELULOSA 20 X 8 CM"},{"c":"0600880652","d":"APÓSITOS HIDROCOLOIDES 10 X 10 CM"},{"c":"0600880900","d":"APÓSITOS HIDROCELULAR DE POLIURETANO PARA EL TALÓN"},{"c":"0600880942","d":"APOSITO TRANSPARENTE ESTERIL 8.5 X 11.5 CM"},{"c":"0600880959","d":"APOSITO TRANSPARENTE ESTERIL 10 X 12 CM"},{"c":"0600881206","d":"APÓSITOS TRANSPARENTE MICROPOROSO, 5.0 X 5.7 CM"},{"c":"0601110208","d":"BARNIZ DE COPAL P/REVESTIMIENTO DE CAVIDADES 15 ML"},{"c":"0601250228","d":"BOLSA PARA UROCULTIVO (NINO)"},{"c":"0601250244","d":"BOLSA PARA UROCULTIVO (NINA)"},{"c":"0601250582","d":"BOLSA PARA ILEOSTOMIA O COLOSTOMIA ADULTO"},{"c":"0601251879","d":"BOLSA PARA RECOLECCION DE ORINA 2000 ML"},{"c":"0601251929","d":"BOLSA DE PAPEL GRADO MÉDICO 40.0 X 58.0 CM"},{"c":"0601252653","d":"BOLSA DE PAPEL GRADO MEDICO 7.5 X 23.0 X 4.0 CM"},{"c":"0601252679","d":"BOLSA DE PAPEL GRADO MEDICO 12.0 X 26.0 X 4.0 CM"},{"c":"0601252711","d":"BOLSA DE PAPEL GRADO MEDICO 7.5 X 48.0 X 4.0 CM"},{"c":"0601252760","d":"BOLSA DE PAPEL GRADO MEDICO 6.0 X 18.0 X 3.0 CM"},{"c":"0601252828","d":"BOLSAS P/ESTERILIZACION CON GAS O VAPOR 9.0 X 12.5 X 5.0 CM"},{"c":"0601252836","d":"BOLSA DE PAPEL GRADO MEDICO 25 X 38 X 8 CM"},{"c":"0601252869","d":"BOLSA DE PAPEL GRADO MEDICO 11.0 X 18.0 X 4.0 CM"},{"c":"0601252877","d":"BOLSA DE PAPEL GRADO MEDICO 18.0 X 33.0 X 6.0 CM"},{"c":"0601253545","d":"BOLSA PARA ALIMENTACION PARENTERAL ADULTO 3 L"},{"c":"0601300015","d":"BOTA QUIRURGICA DE TELA NO TEJIDA"},{"c":"0601320054","d":"BRAZALETE PARA IDENTIFICACION ADULTO"},{"c":"0601570104","d":"CAL SODADA CON INDICADOR. 16 KG"},{"c":"0601650849","d":"CATÉTERES VENOSO CENTRAL 2 L. 1.9 A 3.0 FR"},{"c":"0601660103","d":"CATETERES PARA VENOCLISIS CALIBRE 24 G"},{"c":"0601660624","d":"CANULA P/ASPIRACION MANUAL ENDOUTERINA 12 MM"},{"c":"0601660657","d":"SONDAS PARA ESÓFAGO DE TRES VÍAS 16 FR"},{"c":"0601662141","d":"CATETERES P/DIALISIS PERITONEAL ADULTO (COLA DE COCHINO)"},{"c":"0601664220","d":"CATÉTER PERIFÉRICO DE SEGURIDAD 16 G. 45-52 MM"},{"c":"0601664238","d":"CATÉTER PERIFÉRICO DE SEGURIDAD 18 G 28-34 MM"},{"c":"0601664279","d":"CATÉTER PERIFÉRICO DE SEGURIDAD 22 G 23-27 MM"},{"c":"0601664287","d":"CATÉTER PERIFÉRICO DE SEGURIDAD 24 G 17-24 MM"},{"c":"0601670458","d":"CANULA OROFARINGEA GUEDEL TAMANO 0, 50 MM"},{"c":"0601670466","d":"CANULA OROFARINGEA GUEDEL TAMANO 2, 70 MM"},{"c":"0601670482","d":"CANULA OROFARINGEA GUEDEL TAMANO 4, 90 MM"},{"c":"0601670789","d":"CATETER PARA CATETERISMO VENOSO CENTRAL 16 G"},{"c":"0601673312","d":"CANULA OROFARINGEA GUEDEL TAMANO 1, 60 MM"},{"c":"0601673320","d":"CANULA OROFARINGEA GUEDEL TAMANO 3, 80 MM"},{"c":"0601673346","d":"CÁNULA OROFARÍNGEA GUEDEL TAMAÑO 5,100 MM"},{"c":"0601673387","d":"CATÉTER PARA EMBOLECTOMÍA FOGARTY 3 FR"},{"c":"0601673403","d":"CATÉTER PARA EMBOLECTOMÍA FOGARTY 4 FR"},{"c":"0601673429","d":"CATETER PARA EMBOLECTOMIA FOGARTY 6 FR"},{"c":"0601673437","d":"CATÉTER PARA EMBOLECTOMÍA FOGARTY 7 FR"},{"c":"0601675010","d":"CATETER PARA SUMINISTRO DE OXIGENO 180 CM"},{"c":"0601676638","d":"CATETER P/VASOS UMBILICALES RADIOPACO 3.5 FR"},{"c":"0601676646","d":"CATETER P/VASOS UMBILICALES RADIOPACO 5.0 FR"},{"c":"0601676653","d":"CATETER P/CATETERISMO VENOSO CENTRAL 7 FR X 20 CM 2 L"},{"c":"0601676661","d":"CATÉTER P/CATETERISMO VENOSO CENTRAL 7 FR X 20 CM 3 L"},{"c":"0601676885","d":"CATETER P/CATETERISMO VENOSO CENTRAL 5 FR X 20 CM"},{"c":"0601677024","d":"CATÉTERES PARA DIÁLISIS PERITONEAL CRÓNICA"},{"c":"0601678089","d":"SONDA PARA ALIMENTACION 8 FR"},{"c":"0601678139","d":"SONDAS P/DRENAJE URINARIO FOLEY DE DOS VÍAS 16 FR"},{"c":"0601678147","d":"SONDAS P/DRENAJE URINARIO FOLEY DE DOS VÍAS 18 FR"},{"c":"0601678204","d":"TUBO ENDOTRAQUEAL C/GLOBO 30 FR"},{"c":"0601678220","d":"TUBO ENDOTRAQUEAL S/GLOBO 2.0 MM 8 FR"},{"c":"0601678238","d":"TUBOS ENDOTRAQUEALES S/GLOBO 2.5 MM 10 FR"},{"c":"0601678782","d":"CATÉTER VENOSO, SUBCUTÁNEO IMPLANTABLE CALIBRE 5 FR"},{"c":"0601680077","d":"SONDA PARA ASPIRAR SECRECIONES 18 FR"},{"c":"0601680085","d":"SONDA PARA ASPIRAR SECRECIONES 10 FR"},{"c":"0601680945","d":"CÁNULAS PARA TRAQUEOSTOMÍA ADULTO 7.0 MM"},{"c":"0601681356","d":"TUBOS ENDOTRAQUEALES C/GLOBO 5.0 MM"},{"c":"0601681422","d":"TUBOS ENDOTRAQUEALES C/GLOBO 8.0 MM"},{"c":"0601681455","d":"TUBOS ENDOTRAQUEALES S/GLOBO 3.0 MM"},{"c":"0601681752","d":"SONDA DE LATEX TIPO NELATON 8 FR"},{"c":"0601681844","d":"TUBOS ENDOTRAQUEALES C/GLOBO 32-36 CM 34 FR"},{"c":"0601682214","d":"TUBOS ENDOTRAQUEALES CON GLOBO 5.5 MM"},{"c":"0601682446","d":"TUBO ENDOTRAQUEAL CON GLOBO 6.0 MM"},{"c":"0601682453","d":"CATÉTERES PARA CATETERISMO VENOSO CENTRAL 16 G"},{"c":"0601682495","d":"TUBOS ENDOTRAQUEALES RADIOPACA C/GLOBO 6.5 MM"},{"c":"0601682511","d":"TUBO ENDOTRAQUEAL RADIOPACA C/GLOBO 7.0 MM"},{"c":"0601682537","d":"TUBO ENDOTRAQUEAL RADIOPACA C/GLOBO 8.0 MM"},{"c":"0601682552","d":"TUBO ENDOTRAQUEAL RADIOPACA C/GLOBO 8.5 MM"},{"c":"0601682560","d":"TUBO ENDOTRAQUEAL RADIOPACA C/GLOBO ORIFICIO T"},{"c":"0601682578","d":"TUBOS ENDOTRAQUEALES RADIOPACA C/GLOBO 9.5 MM"},{"c":"0601683311","d":"SONDAS PARA DRENAJE FOLEY DE DOS VÍAS 8 FR"},{"c":"0601684277","d":"SONDA GASTROINTESTINAL LEVIN 12 FR"},{"c":"0601684418","d":"SONDA GASTROINTESTINAL LEVIN 18 FR"},{"c":"0601685340","d":"TUBO ENDOTRAQUEAL SIN GLOBO 3.5 MM"},{"c":"0601685365","d":"TUBO ENDOTRAQUEAL SIN GLOBO 4.0 MM"},{"c":"0601685381","d":"TUBO ENDOTRAQUEAL SIN GLOBO 4.5 MM"},{"c":"0601685399","d":"TUBO ENDOTRAQUEAL SIN GLOBO 5.0 MM"},{"c":"0601685407","d":"TUBOS ENDOTRAQUEALES SIN GLOBO 5.5 MM"},{"c":"0601685431","d":"TUBOS ENDOTRAQUEALES SIN GLOBO 6.0 MM"},{"c":"0601685456","d":"TUBOS ENDOTRAQUEALES SIN GLOBO 6.5 MM"},{"c":"0601686439","d":"SONDA URETRAL FOLEY-OWEN (DE 3 VIAS) 20 FR"},{"c":"0601686454","d":"SONDA URETRAL FOLEY-OWEN (DE 3 VIAS) 22 FR"},{"c":"0601686512","d":"SONDA URETRAL FOLEY-OWEN (DE 3 VIAS) 24 FR"},{"c":"0601686595","d":"SONDA DE LATEX NELATON 10 FR"},{"c":"0601686603","d":"CATETERES PARA VENOCLISIS 46-52 MM 14 G"},{"c":"0601686611","d":"SONDA DE LATEX NELATON 12 FR"},{"c":"0601686629","d":"CATETERES PARA VENOCLISIS 46-52 MM 16 G"},{"c":"0601686637","d":"SONDA DE LATEX NELATON 14 FR"},{"c":"0601686645","d":"CATETERES PARA VENOCLISIS 28-34 MM 18 G"},{"c":"0601686652","d":"SONDA DE LATEX NELATON 16 FR"},{"c":"0601686660","d":"CATETER PARA VENOCLISIS 20 G"},{"c":"0601686678","d":"SONDA DE LATEX NELATON 18 FR"},{"c":"0601686686","d":"CATETER PARA VENOCLISIS 22 G"},{"c":"0601688138","d":"CANULA PARA TRAQUEOSTOMIA ADULTO 8.0 MM"},{"c":"0601688146","d":"CANULA PARA TRAQUEOSTOMIA ADULTO 9.0 MM"},{"c":"0601688302","d":"SONDA DE LATEX NELATON 20 FR"},{"c":"0601688310","d":"SONDA DE LATEX NELATON 22 FR"},{"c":"0601688328","d":"SONDA DE LATEX NELATON 24 FR"},{"c":"0601689243","d":"SONDA PARA ALIMENTACION 5 FR"},{"c":"0601689433","d":"SONDA PARA DRENAJE EN FORMA DE T 16 FR"},{"c":"0601689441","d":"SONDA PARA DRENAJE EN FORMA DE T 18 FR"},{"c":"0601689482","d":"SONDA FOLEY DE DOS VIAS 10 FR DE 3 ML"},{"c":"0601689615","d":"SONDA FOLEY DE DOS VIAS 12 FR DE 5 ML"},{"c":"0601689623","d":"SONDA FOLEY DE DOS VIAS 14 FR DE 5 ML"},{"c":"0601689631","d":"SONDA FOLEY DE DOS VIAS 16 FR DE 5 ML"},{"c":"0601689649","d":"SONDA FOLEY DE DOS VIAS 18 FR DE 5 ML"},{"c":"0601689656","d":"SONDA FOLEY DE DOS VIAS 20 FR DE 5 ML"},{"c":"0601689664","d":"SONDA FOLEY DE DOS VIAS 22 FR DE 5 ML"},{"c":"0601689672","d":"SONDA FOLEY DE DOS VIAS 24 FR DE 5 ML"},{"c":"0601689730","d":"SONDA FOLEY DE DOS VIAS 12 FR DE 30 ML"},{"c":"0601689748","d":"SONDA FOLEY DE DOS VIAS 14 FR DE 30 ML"},{"c":"0601689755","d":"SONDA FOLEY DE DOS VIAS 16 FR DE 30 ML"},{"c":"0601689771","d":"SONDA FOLEY DE DOS VIAS 20 FR DE 30 ML"},{"c":"0601689789","d":"SONDA FOLEY DE DOS VIAS 22 FR DE 30 ML"},{"c":"0601689797","d":"SONDA FOLEY DE DOS VIAS 24 FR DE 30 ML"},{"c":"0601689870","d":"SONDA SENGSTAKEN BLAKEMORE 18 FR"},{"c":"0601689896","d":"SONDA GASTROINTESTINAL LEVIN 14 FR"},{"c":"0601689904","d":"SONDA GASTROINTESTINAL LEVIN 16 FR"},{"c":"0601821366","d":"CEMENTO DENTAL PARA USO QUIRURGICO 30 ML"},{"c":"0601890049","d":"CEPILLO PARA ESTUDIO CITOLOGICO (TOMA DE MUESTRA)"},{"c":"0601890304","d":"CEPILLO PARA USO QUIRURGICO DE PLASTICO"},{"c":"0601960057","d":"CERA PARA HUESOS (PASTA DE BECK)"},{"c":"0602030165","d":"CINTA UMBILICAL DE ALGODÓN"},{"c":"0602030207","d":"CINTA PARA ESTERILIZACION EN VAPOR 18 MM X 50 M"},{"c":"0602030306","d":"CINTA MICROPOROSA 10 M X 1.25 CM"},{"c":"0602030363","d":"CINTA MICROPOROSA 10 M X 5 CM"},{"c":"0602030397","d":"CINTA MICROPOROSA 10 M X 2.50 CM"},{"c":"0602190068","d":"COLORANTES REVELADORES DE PLACAS DENTOBACTERIANAS"},{"c":"0602310104","d":"COMPRESAS PARA VIENTRE, DE ALGODÓN"},{"c":"0602310641","d":"BATA QUIRURGICA GRANDE"},{"c":"0602310658","d":"BATA QUIRURGICA EXTRAGRANDE"},{"c":"0602310666","d":"BATA QUIRURGICA MEDIANO"},{"c":"0602330011","d":"CONECTOR DE UNA VIA TIPO SIMS DELGADO"},{"c":"0602330037","d":"CONECTOR DE DOS VIAS EN (Y)"},{"c":"0602330052","d":"CONECTOR DE UNA VIA TIPO SIMS GRUESO"},{"c":"0602350019","d":"COPAS PARA PIEZA DE MANO DE HULE SUAVE. BLANCO"},{"c":"0603080029","d":"DISPOSITIVO INTRAUTERINO. T DE COBRE. 380 A. DE COBRE"},{"c":"0603080151","d":"DISPOSITIVO INTRAUTERINO CU 375 CORTO. DE COBRE"},{"c":"0603080169","d":"DISPOSITIVO INTRAUTERINO. CU 375 ESTANDAR. DE COBRE"},{"c":"0603080177","d":"CONDON MASCULINO DE HULE LATEX"},{"c":"0603080193","d":"DISPOSITIVO INTRAUTERINO. T DE COBRE PARA NULIPARAS"},{"c":"0603080227","d":"CONDON FEMENINO DE POLIURETANO O LATEX"},{"c":"0603140054","d":"EQUIPO PARA DRENAJE DE LA CAVIDAD PLEURAL"},{"c":"0603300054","d":"ELECTRODO DE BROCHE PARA MONITOREO CONTINUO"},{"c":"0603370164","d":"ENGRAPADORA PARA PIEL CON 55 GRAPAS"},{"c":"0603450305","d":"EQUIPO PARA MEDICION DE PRESION VENOSA CENTRAL"},{"c":"0603450503","d":"EQUIPO PARA APLICACIÓN DE VOLUMENES DE 100 ML"},{"c":"0603450743","d":"EQUIPO PARA PROCEDIMIENTOS UROLOGICOS"},{"c":"0603451329","d":"EQUIPO PARA ALIMENTACION ENTERAL 1.500 ML"},{"c":"0603451352","d":"EQUIPO PARA ALIMENTACION ENTERAL 500 ML"},{"c":"0603451360","d":"EQUIPO PARA VENOCLISIS EN FORMA DE MARIPOSA 19G"},{"c":"0603451378","d":"EQUIPO PARA VENOCLISIS EN FORMA DE MARIPOSA 21G"},{"c":"0603451386","d":"EQUIPO PARA VENOCLISIS EN FORMA DE MARIPOSA 23G"},{"c":"0603451865","d":"EQUIPO PARA DRENAJE POR ASPIRACION DE 3 MM"},{"c":"0603451873","d":"EQUIPO PARA DRENAJE POR ASPIRACION DE 6 MM"},{"c":"0603452152","d":"EQUIPO BASICO PARA BLOQUEO EPIDURAL"},{"c":"0603452301","d":"EQUIPO PARA HEMODIALISIS TIPO MAHURKAR ADULTO"},{"c":"0603453119","d":"SISTEMA DE SUCCION CERRADO 10 FR"},{"c":"0603453127","d":"SISTEMA DE SUCCIÓN CERRADO 12 FR"},{"c":"0603453135","d":"SISTEMA DE SUCCION CERRADO 14 FR"},{"c":"0603453143","d":"SISTEMA DE SUCCION CERRADO 16 FR"},{"c":"0603453788","d":"EQUIPO PARA ANESTESIA MIXTA EPIDURAL/SUBDURAL"},{"c":"0603453798","d":"EQUIPO PARA ANESTESIA MIXTA EPIDURAL/SUBDURAL PEDIATRICO"},{"c":"0603454281","d":"EQUIPO PARA ANESTESIA MIXTA EPIDURAL/SUBDURAL OBESOS"},{"c":"0603454299","d":"EQUIPO PARA ANESTESIA MIXTA EPIDURAL/SUBDURAL"},{"c":"0603540014","d":"ESPATULA DE AYRE MODIFICADA. DE MADERA INASTILLABLE"},{"c":"0603600032","d":"ESPEJO VAGINAL DESECHABLE. MEDIANO"},{"c":"0604000299","d":"EXPANSOR TISULAR DE TEJIDO MAMARIO DE FORMA ANATÓMICA"},{"c":"0604310342","d":"FRESA DE CARBURO. NO. 702 L"},{"c":"0604310466","d":"FRESA DE CARBURO. FORMA TRONCO CONICO NO. 701"},{"c":"0604310516","d":"FRESONES METALICOS PARA REBAJAR ACRILICO"},{"c":"0604360057","d":"GASA SECA CORTADA DE ALGODÓN 7.5 CM X 5 CM"},{"c":"0604360107","d":"GASA SECA CORTADA DE ALGODÓN 10 CM X 10 CM"},{"c":"0604360206","d":"GASA SIMPLE SECA DE ALGODÓN 91 M X 91 CM"},{"c":"0604360552","d":"GASA SECA CON MARCA RADIOPACA 10 CM X 10 CM"},{"c":"0604390039","d":"GORRO DE TELA NO TEJIDA TAMAÑO ESTANDAR"},{"c":"0604390054","d":"GORRO REDONDO CON ELASTICO AJUSTABLE CHICO"},{"c":"0604410019","d":"GOOGLES DE SEGURIDAD"},{"c":"0604560037","d":"GUANTES PARA EXPLORACION ESTERILES DE POLIETILENO MEDIANO"},{"c":"0604560045","d":"GUANTES PARA EXPLORACION ESTERILES DE POLIETILENO GRANDE"},{"c":"0604560300","d":"GUANTES PARA CIRUGIA DE LATEX NATURAL 6 1/2"},{"c":"0604560318","d":"GUANTES PARA CIRUGIA DE LATEX NATURAL 7"},{"c":"0604560334","d":"GUANTES PARA CIRUGIA DE LATEX NATURAL 7 1/2"},{"c":"0604560359","d":"GUANTES PARA CIRUGIA DE LATEX NATURAL 8"},{"c":"0604560367","d":"GUANTES PARA CRUGIA DE LATEX NATURAL 8 1/2"},{"c":"0604560391","d":"GUANTES PARA EXPLORACION DE LATEX MEDIANO"},{"c":"0604560409","d":"GUANTES PARA EXPLORACION DE LATEX GRANDE"},{"c":"0604560623","d":"GUANTES DE NITRILO O POLIBUTADINE CHICO"},{"c":"0604560631","d":"GUANTES DE NITRILO O POLIBUTADINE MEDIANO"},{"c":"0604560649","d":"GUANTES DE NITRILO O POLIBUTADINE GRANDE"},{"c":"0604560656","d":"GUANTES PARA EXPLORACION NO ESTERILES DE LATEX CHICO"},{"c":"0604560664","d":"GUANTES PARA EXPLORACION NO ESTERILES DE LATEX MEDIANO"},{"c":"0604610162","d":"GUATAS DE TELA NO TEJIDA 15 CM"},{"c":"0604610188","d":"GUATAS DE TELA NO TEJIDA 20 CM"},{"c":"0604700112","d":"HEMOSTATICOS ESPONJA DE GELATINA 50 A 100 X 70 A 125 MM"},{"c":"0604700146","d":"HEMOSTATICOS SATIN ABSORBIBLE"},{"c":"0604830091","d":"HOJAS PARA BISTURI NUM 10"},{"c":"0604830125","d":"HOJAS PARA BISTURI NUM 11"},{"c":"0604830133","d":"HOJAS PARA BISTURI NUM 20"},{"c":"0604830141","d":"HOJAS PARA BISTURI NUM 15"},{"c":"0604830158","d":"HOJAS PARA BISTURI NUM 21"},{"c":"0604830174","d":"HOJAS PARA BISTURI NUM 23"},{"c":"0604830778","d":"SIERRA MANUAL GIGLI"},{"c":"0605270347","d":"EQUIPO INTRODUCTOR DE CATETER VENOSO"},{"c":"0605320084","d":"EQUIPO PARA VENOCLISIS MICROGOTERO"},{"c":"0605320167","d":"EQUIPO PARA VENOCLISIS NORMOGOTERO"},{"c":"0605320175","d":"EQUIPO PARA TRANSFUSION CON FILTRO SIN AGUJA"},{"c":"0605430115","d":"JALEA LUBRICANTE ASEPTICA"},{"c":"0605500222","d":"JERINGA DE PLASTICO SIN AGUJA 3 ML"},{"c":"0605500438","d":"JERINGA DE PLASTICO SIN AGUJA 5 ML"},{"c":"0605500446","d":"JERINGA DE PLASTICO SIN AGUJA 10 ML"},{"c":"0605500453","d":"JERINGA DE PLASTICO SIN AGUJA 20 ML"},{"c":"0605500784","d":"JERINGA DE VIDRIO SIN AGUJA 20 ML"},{"c":"0605500891","d":"JERINGA DE VIDRIO CON VULVO DE HULE 90 ML"},{"c":"0605500909","d":"JERINGA DE VIDRIO CON VULVO DE HULE 60 ML"},{"c":"0605501014","d":"JERINGA DE VIDRIO SIN AGUJA 50 ML"},{"c":"0605502186","d":"JERINGA PARA INSULINA DE 0 A 100 U DE 1 ML"},{"c":"0605502590","d":"JERINGA DE PLASTICO GRADO MEDICO DE 1 ML DE CAPACIDAD"},{"c":"0605502640","d":"JERINGAS DE PLASTICO. PARA APLICAR DPT Y TOXOIDE TETANICO"},{"c":"0605502657","d":"JERINGA DE PLASTICO. PARA APLICAR BCG Y ANTISARAMPION"},{"c":"0605502699","d":"JERINGA DESECHABLE PARA APLICAR VACUNA CONTRA HEPATITIS B"},{"c":"0605502707","d":"JERINGA DESECHABLE PARA APLICAR 0.25 ML DE VACUNA ANTIINFLUENZA"},{"c":"0605502715","d":"JERINGA DESECHABLE PARA APLICAR 0.5 ML DE VACUNA ANTIINFLUENZA"},{"c":"0605502723","d":"JERINGA PARA INSULINA DE 0 A 50 U DE 0.5 ML"},{"c":"0605512227","d":"JERINGA DE PLASTICO PARA ASPIRACION MANUAL ENDOUTERINA. 60 ML"},{"c":"0605960129","d":"LIQUIDO LUBRICANTE DE SILICON DE 3 ML"},{"c":"0605980010","d":"LLAVE DE CUATRO VIAS"},{"c":"0605980036","d":"LLAVE DE TRES VIAS CON TUBO DE EXTENSION"},{"c":"0606030013","d":"MALLA DE POLIPROPILENO DE 25 A 35 CM X 25 A 35 CM"},{"c":"0606190015","d":"MATRIZ OSEA DESMINERALIZADA EN PASTA CON O SIN JERINGA 10 ML"},{"c":"0606210482","d":"MASCARILLA DESECHABLE PARA OXIGENO"},{"c":"0606210524","d":"CUBREBOCA DE DOS CAPAS DE TELA NO TEJIDA"},{"c":"0606210656","d":"CUBREBOCA QUIRURGICO ELABORADO CON DOS CAPAS EXTERNAS DE TELA NO TEJIDA"},{"c":"0606210664","d":"PROTECTOR RESPIRATORIO CON EFICIENCIA DE FILTRACION MICROBIOLOGICA"},{"c":"0606260016","d":"MEDIAS ANTIEMBOLICAS TALLA CHICA-CORTA"},{"c":"0606260024","d":"MEDIAS ANTIEMBOLICAS TALLA CHICA-LARGA"},{"c":"0606260032","d":"MEDIAS ANTIEMBOLICAS TALLA MEDIANA-CORTA"},{"c":"0606260040","d":"MEDIAS ANTIEMBOLICAS TALLA MEDIANA-LARGA"},{"c":"0606260057","d":"MEDIAS ANTIEMBOLICAS TALLA GRANDE-CORTA"},{"c":"0606260065","d":"MEDIAS ANTIEMBOLICAS TALLA GRANDE-LARGA"},{"c":"0606810034","d":"PAÑALES DESECHABLES PARA NIÑO CHICO"},{"c":"0606810042","d":"PAÑALES DESECHABLES PARA NIÑO MEDIANO"},{"c":"0606810059","d":"PAÑALES DESECHABLE PARA NIÑO GRANDE"},{"c":"0606810067","d":"PAÑALES PREDOBLADO PARA ADULTO"},{"c":"0606830057","d":"PANOS PARA EXPRIMIR AMALGAMA. DE ALGODÓN"},{"c":"0606850600","d":"PAPEL PARA ELECTROCARDIOGRAFO"},{"c":"0606970267","d":"PASTA O GEL PARA ELECTROCARDIOGRAMA"},{"c":"0607300787","d":"HIDROXIAPATITA POROSA O FOSFATO TRICALCICO FRASCO CON 6.3 G (10 CM3) O PRESENTACION EQUIVALENTE"},{"c":"0607300795","d":"HIDROXIAPATITA POROSA O FOSFATO TRICALCICO FRASCO CON 9.5 G (15 CM3) O PRESENTACION EQUIVALENTE"},{"c":"0607300803","d":"HIDROXIAPATITA POROSA O FOSFATO TRICALCICO. FRASCO CON 12.7 G. (20 CM3) O PRESENTACION EQUIVALENTE"},{"c":"0607300811","d":"HIDROXIAPATITA POROSA O FOSFATO TRICALCICO. FRASCO CON 20.5 G. (30 CM3) O PRESENTACION EQUIVALENTE"},{"c":"0607400025","d":"PROTECTOR DE PIEL TINTURA DE BENJUI"},{"c":"0607488970","d":"PRÓTESIS MAMARIA DE GEL."},{"c":"0607710050","d":"RASTRILLOS DESECHABLES"},{"c":"0608110060","d":"HILOS DE SEDA ROLLO DE 5O M"},{"c":"0608190021","d":"SOLVENTE ACETONA"},{"c":"0608307070","d":"SONDA PARA DRENAJE TORACICO. 45 A 51 CM 36 FR"},{"c":"0608330338","d":"SOLUCIONES ACIDO HIDROALURONICO 0.3 %"},{"c":"0608410049","d":"SUTURA SINTETICA C/AGUJA 75 CM 2-0 (25 - 26 MM)"},{"c":"0608410205","d":"SUTURA POLIPROPILENO C/AGUJA 3 0 (24 - 26 MM)"},{"c":"0608410221","d":"SUTURA POLIPROPILENO C/AGUJA 2 0 (24 - 26 MM)"},{"c":"0608410254","d":"SUTURA POLIPROPILENO C/AGUJA 6 0 (12 - 13 MM)"},{"c":"0608410288","d":"SUTURA POLIPROPILENO C/AGUJA 4 0 (15 - 17 MM)"},{"c":"0608410296","d":"SUTURA POLIPROPILENO C/AGUJA 3 0 (25 - 26 MM)"},{"c":"0608410460","d":"SUTURA NYLON C/AGUJA 4 0 (12 - 13 MM)"},{"c":"0608410478","d":"SUTURA NYLON C/AGUJA 3 0 (19 - 26 MM)"},{"c":"0608410486","d":"SUTURA NYLON C/AGUJA 2 0 (19 - 26 MM)"},{"c":"0608410551","d":"SUTURA CATGUT CROMICO C/AGUJA 2 0 (35 - 37 MM)"},{"c":"0608410569","d":"SUTURA CATGUT CROMICO C/AGUJA 1 (35 - 37 MM)"},{"c":"0608410619","d":"SUTURA SEDA NEGRA C/AGUJA 3 0 (25 - 26 MM)"},{"c":"0608410627","d":"SUTURA SEDA NEGRA C/AGUJA 2 0 (25 - 26 MM)"},{"c":"0608410643","d":"SUTURA SEDA NEGRA C/AGUJA 2 0 (35 37 MM)"},{"c":"0608410734","d":"SUTURA SEDA NEGRA S/AGUJA 3 0"},{"c":"0608410742","d":"SUTURA SEDA NEGRA S/AGUJA 2 0"},{"c":"0608410767","d":"SUTURA SEDA NEGRA S/AGUJA 0"},{"c":"0608410775","d":"SUTURA SEDA NEGRA S/AGUJA 1"},{"c":"0608410833","d":"SUTURA ACIDO GLICOLICO C/AGUJA 4-0 26 MM"},{"c":"0608410858","d":"SUTURA ACIDO GLICOLICO C/AGUJA 3-0 (25 - 26 MM)"},{"c":"0608410866","d":"SUTURA ACIDO GLICOLICO C/AGUJA 2-0 (25 - 26 MM)"},{"c":"0608410882","d":"SUTURA ACIDO GLICOLICO C/AGUJA 1 (35 - 37 MM)"},{"c":"0608410890","d":"SUTURA ACIDO GLICOLICO C/AGUJA 0 (35 - 37 MM)"},{"c":"0608410916","d":"SUTURA ACIDO GLICOLICO C/AGUJA 2-0 (35 - 37 MM)"},{"c":"0608410973","d":"SUTURA ACIDO GLICOLICO C/AGUJA 3-0 (24 MM)"},{"c":"0608410981","d":"SUTURA DE POLIPROPILENO C/AGUJA 2-0 (60 MM)"},{"c":"0608411336","d":"SUTURA DE POLIESTER C/AGUJA 2-0 (45 MM)"},{"c":"0608411393","d":"SUTURA DE CATGUT SIMPLE C/AGUJA 2-0"},{"c":"0608411559","d":"SUTURA DE POLIDIOXANONA C/AGUJA 1 (35 - 40 MM)"},{"c":"0608411948","d":"SUTURA SEDA NEGRA C/AGUJA 1 (35 - 37 MM)"},{"c":"0608411955","d":"SUTURA SEDA NEGRA C/AGUJA 0 (25 - 26 MM)"},{"c":"0608412268","d":"SUTURA NYLON C/AGUJA 6-0 (10 - 13 MM)"},{"c":"0608412276","d":"SUTURA DE POLIDIOXANONA C/AGUJA 3-0 (35 - 40 MM)"},{"c":"0608412441","d":"SUTURA NYLON C/AGUJA 10-0"},{"c":"0608412623","d":"SUTURA CATGUR CROMICO C/AGUJA 0 (35 - 37 MM)"},{"c":"0608414264","d":"SUTURA CATGUT SIMPLE C/AGUJA 3-0 (25 - 27 MM)"},{"c":"0608414371","d":"SUTURA CATGUT CROMICO C/AGUJA 2-0 (25 - 27 MM)"},{"c":"0608414447","d":"SUTURA CATGUT CROMICO C/AGUJA 0 (25 - 27 MM)"},{"c":"0608414462","d":"SUTURA CATGUT CROMICO C/AGUJA 3-0 (25 - 27 MM)"},{"c":"0608414470","d":"SUTURA CATGUT CROMICO C/AGUJA 4-0 (25 - 27 MM)"},{"c":"0608420402","d":"SUTURAS DE GLICOLIDA Y ÉPSILON-CAPROLACTONA 5-0 (15 A 17 MM)"},{"c":"0608420410","d":"SUTURA DE GLICOLIDA Y EPSILON-CAPROLACTONA 2-0 (25 - 26 MM)"},{"c":"0608420428","d":"SUTURA DE GLICOLIDA Y EPSILON-CAPROLACTONA 3-0 (25 - 26 MM)"},{"c":"0608420436","d":"SUTURA DE GLICOLIDA Y EPSILON-CAPROLACTONA 4-0 (25 - 26 MM)"},{"c":"0608490256","d":"TALCO PARA GUANTES QUIRURGICOS 2 KG"},{"c":"0608690103","d":"TELA ADHESIVA DE 10 M X 1.25 CM"},{"c":"0608690152","d":"TELA ADHESIVA DE 10 M X 2.50 CM"},{"c":"0608690202","d":"TELA ADHESIVA DE 10 M X 5.00 CM"},{"c":"0608690251","d":"TELA ADHESIVA DE 10 M X 7.50 CM"},{"c":"0608790143","d":"TERMOMETRO CLINICO RECTAL"},{"c":"0608790150","d":"TERMOMETRO CLINICO ORAL"},{"c":"0608940052","d":"TOALLAS PARA GINECO-OBSTETRICIA"},{"c":"0609040100","d":"ALGODÓN TORUNDA ENVASE CON 500 G"},{"c":"0609080015","d":"TUBO PARA CANALIZACION 7.94 MM (5/16\")"},{"c":"0609080114","d":"TUBO PARA CANALIZACION 12.70 MM (1/2\")"},{"c":"0609080122","d":"TUBO PARA CANALIZACION 19.05 MM (3/4\")"},{"c":"0609080130","d":"TUBO PARA CANALIZACION 25.40 MM (1\")"},{"c":"0609080460","d":"TUBO ENDOBRONQUIAL DERECHO 37 FR"},{"c":"0609080478","d":"TUBO ENDOBRONQUIAL IZQUIERDO 39 FR"},{"c":"0609080494","d":"TUBO ENDOBRONQUIAL DERECHO 35 FR"},{"c":"0609080502","d":"TUBO ENDOBRONQUIAL IZQUIERDO 35 FR"},{"c":"0609080528","d":"TUBO ENDOBRONQUIAL DERECHO 39 FR"},{"c":"0609080544","d":"TUBO ENDOBRONQUIAL IZQUIERDO 37 FR"},{"c":"0609080890","d":"TUBO PARA TORNIQUETE DE 1.3 A 3.37 MM"},{"c":"0609080924","d":"TUBO PARA ASPIRADOR DE LATEX 6.3 MM 10 M"},{"c":"0609100011","d":"EYECTORES. PARA SALIVA DE PLÁSTICO DESECHABLE"},{"c":"0609530092","d":"VENDA ELASTICA ADHESIVA 10.0 CM"},{"c":"0609530100","d":"VENDA ELASTICA ADHESIVA 7.5 CM"},{"c":"0609530209","d":"VENDA DE GASA DE ALGODÓN DE 5 CM"},{"c":"0609530266","d":"VENDA DE GOMA (SMARCH) 6 CM"},{"c":"0609530282","d":"VENDA DE GOMA (SMARCH) 8 CM"},{"c":"0609530456","d":"VENDA ENYESADA DE 5 CM"},{"c":"0609530555","d":"VENDA ENYESADA DE 10 CM"},{"c":"0609530571","d":"VENDA ENYESADA DE 15 CM"},{"c":"0609530597","d":"VENDA ENYESADA DE 20 CM"},{"c":"0609530753","d":"VENDA DE MALLA ELASTICA NUM 2"},{"c":"0609530787","d":"VENDA DE MALLA ELASTICA NUM 5"},{"c":"0609532825","d":"VENDA ELASTICA DE TEJIDO PLANO 30 CM"},{"c":"0609532858","d":"VENDA ELASTICA DE TEJIDO PLANO 5 CM"},{"c":"0609532866","d":"VENDA ELASTICA DE TEJIDO PLANO 10 CM"},{"c":"0609532874","d":"VENDA ELASTICA DE TEJIDO PLANO 15 CM"},{"c":"0704260025","d":"SOLUCION PARA REVELADO Y FIJADO PARA PROCESADORA AUTOMATICA. FIJADOR CONCENTRADO PARA PREPARAR 76 LITROS (LA MARCA DE ESTE PRODUCTO DEBE SER LA MISMA DE LA CLAVE 070.817.0543)."},{"c":"0705810091","d":"GRUPO 2: MEDIOS DE CONTRASTE DE 300 A 320 MG 20 ML"},{"c":"0705810109","d":"GRUPO 2: MEDIOS DE CONTRASTE DE 300 A 320 MG 50 ML"},{"c":"0705810117","d":"GRUPO 2: MEDIOS DE CONTRASTE DE 300 A 320 MG 100 ML"},{"c":"0705810141","d":"GRUPO 2: MEDIOS DE CONTRASTE DE 350 A 370 MG 50 ML"},{"c":"0705810158","d":"GRUPO 2: MEDIOS DE CONTRASTE DE 350 A 37 MG 100 ML"},{"c":"0705900017","d":"GRUPO 8: MEDIOS DE CONTRASTE ORAL/RECTAL POLVO"},{"c":"0705900058","d":"GRUPO 8: MEDIOS DE CONTRASTE BUCAL O RECTAL POLVO"},{"c":"0705900066","d":"GRUPO 8: MEDIOS DE CONTRASTE BUCAL O RECTAL POLVO"},{"c":"0705910032","d":"GRUPO 10: MEDIOS DE CONTRASTE DE GEL 250 ML"},{"c":"0705910040","d":"GRUPO 10: MEDIOS DE CONTRASTE DE GEL 3800 ML"},{"c":"0707070041","d":"PELICULA ORTOCROMATICA SENSIBLE AL VERDE PARA RADIOLOGIA GENERAL. MEDIDAS: 20.3 X 25.4 CM. CAJA CON 100 PELICULAS."},{"c":"0707070115","d":"PELICULAS ORTOCROMATICAS SENSIBLES AL VERDE. PARA MASTOGRAFIA. MEDIDAS: 24 X 30 CMS. CAJA CON 100 PELICULAS"},{"c":"0707070116","d":"PELICULA ORTOCROMATICA SENSIBLE AL VERDE PARA RADIOLOGIA GENERAL. MEDIDAS: 30 X 35 CM. CAJA CON 100 PELICULAS."},{"c":"0707070132","d":"PELICULA ORTOCROMATICA SENSIBLE AL VERDE PARA RADIOLOGIA GENERAL. MEDIDAS: 35.6 X 35.6 CM. CAJA CON 100 PELICULAS."},{"c":"0707070140","d":"PELICULA ORTOCROMATICA SENSIBLE AL VERDE PARA RADIOLOGIA GENERAL. MEDIDAS: 35.6 X 43.2 CM. CAJA CON 100 PELICULAS."},{"c":"0707070173","d":"PELICULAS ORTOCROMATICAS SENSIBLES AL VERDE. PARA MASTOGRAFIA. MEDIDAS: 18 X 24 CM. CAJA CON 100 PELICULAS."},{"c":"0708170543","d":"SOLUCION PARA REVELADO Y FIJADO PARA PROCESADORA AUTOMATICA. REVELADOR CONCENTRADO PARA PREPARAR 76 LITROS (LA MARCA DE ESTE PRODUCTO DEBE SER LA MISMA DE LA CLAVE 070.426.0025)."},{"c":"0800180101","d":"FIJADOR HIDROSOLUBLE PARA CITOLOGIA EXFOLIATIVA. EN AEROSOL. ENVASE CON 250 G. TA."},{"c":"0805740016","d":"LANCETA METALICA. CALIBRE 30 G. Y PUNTA DE 3.25 MM"},{"c":"0805740032","d":"LANCETA DE RETRACCIÓN AUTOMÁTICA Y PERMANENTE. DE 1.8 A 2.0 MM"},{"c":"0805740164","d":"LANCETAS METALICAS CON ENVOLTURA INDIVIDUAL: PUNTA DE 3 MM"},{"c":"0805830155","d":"LAPICES MARCADORES PARA VIDRIO O PORCELANA"},{"c":"0806102398","d":"MEDIO DE TRANSPORTE CARY Y BLAIR"},{"c":"0807290051","d":"PORTAOBJETOS DE VIDRIO DE 75 X 25 X 0.8 A 1.1 MM"},{"c":"0807831508","d":"REACTIVOS Y JUEGOS DE REACTIVOS PARA PRUEBAS ESPECÍFICAS. LUGOL"},{"c":"0807831573","d":"REACTIVOS Y JUEGOS DE REACTIVOS P/PRUEBAS ESPECÍFICAS 5%"},{"c":"0807848007","d":"PRUEBAS RÁPIDAS PARA LA DETERMINACIÓN CROMATOGRÁFICA"},{"c":"0808550164","d":"POMADERA DE POLIETILENO DE ALTA DENSIDAD (60003) DE 60 ML."},{"c":"0808890115","d":"TIRA REACTIVA PARA DETERMINACION DE GLUCOSA EN SANGRE"},{"c":"0808892533","d":"TIRAS REACTIVAS PARA DETERMINACION DE GLUCOSA"},{"c":"2200010045","d":"PAQUETE PARA CIRUGIA MENOR"},{"c":"2200010046","d":"PAQUETE PARA PARTO VIA VAGINAL"},{"c":"2200010047","d":"PAQUETE PARA CIRUGIA DE CABEZA O CUELLO"},{"c":"2200010048","d":"BATA QUIRURGICA ESTERIL"},{"c":"2200010049","d":"CAMPO QUIRURGICO ESTERIL"},{"c":"2200010050","d":"CAMPO QUIRURGICO HENDIDO ESTERIL"},{"c":"2200010051","d":"SABANA QUIRURGICA HENDIDA ESTERIL"},{"c":"2200010052","d":"SABANA PARA MESA DE RIÑON ESTERIL"},{"c":"2200010053","d":"VESTUARIO PARA EL EQUIPO QUIRURGICO"},{"c":"2200010054","d":"PAQUETE PARA CIRUGIA LAPAROSCOPIA ESTERIL"},{"c":"2200010055","d":"PAQUETE PARA CIRUGIA UNIVERSAL ESTERIL"},{"c":"2200010056","d":"CAMISON PARA PACIENTE NO ESTERIL"},{"c":"2200010057","d":"PAQUETE PARA ARTROSCOPIA ESTERIL"},{"c":"2200010058","d":"SABANA PARA CADERA ESTERIL"},{"c":"3700001601","d":"CONSUMIBLES P/ESTERILIZADOR DE BAJA TEMPERATURA CAPACIDAD DE 100 L"},{"c":"3700001602","d":"CONSUMIBLES P/ESTERILIZADOR DE BAJA TEMPERATURA CAPACIDAD DE 30 L"},{"c":"5001920003","d":"CONSUMIBLE DE LA UNIDAD DE TOMOGRAFIA 14 X 17 PULGADAS"},{"c":"5001940001","d":"PRUEBA RAPIDA INMUNOCROMATOGRAFICA PROSTATICO (PSA)"},{"c":"5002520001","d":"MEDIO DE TRANSPORTE VIRAL UNIVERSAL CON 3.0 M"},{"c":"5002990001","d":"CONSUMIBLE PARA LA UNIDAD DE MASTOGRAFIA DIGITAL 8 X 10 PULGADAS"},{"c":"5003000001","d":"CONSUMIBLE PARA LA UNIDAD DE MASTOGRAFIA DIGITAL 10 X 12 PULGADAS"},{"c":"5003020001","d":"APOSITO DE PELICULA TRANSPARENTE 8.5 X 10.5 CM"},{"c":"5003090001","d":"HIDROXIAPATITA POROSA O FOSFATO TRICALCICO CON 3.1 G (5 CM3)"},{"c":"5003100001","d":"MATRIZ OSEA DESMINERALIZADA EN PASTA (5 ML)"},{"c":"5003130001","d":"MATRIZ OSEA DESMINERALIZADA 5 CC"},{"c":"5003140001","d":"MATRIZ OSEA DESMINERALIZADA 10 CC"},{"c":"5003240001","d":"PERLAS DE SULFATO DE CALCIO 100% PURO"},{"c":"5003270001","d":"MEDIO DE TRANSPORTE CARY Y BLAIR"},{"c":"5003290001","d":"EQUIPO PARA BAÑO DE ESPONJA"},{"c":"5003300001","d":"PRUEBA RAPIDA DE INMUNOENSAYO CROMATOGRAFICO P/SANGRE"},{"c":"5004160001","d":"HISOPO ESTERIL CON MANGO DE PLASTICO"},{"c":"5004310001","d":"CUBREBOCA DE TRES CAPAS DE TELA NO TEJIDA"},{"c":"5004320001","d":"MASCARILLA N95 CERTIFICACION NIOSH"},{"c":"5004330001","d":"GOGGLES CONTRA SALPICADURAS"},{"c":"5004350001","d":"GUANTES DE NITRILO O POLIBUTADINE CHICO"},{"c":"5004360001","d":"GUANTES DE NITRILO O POLIBUTADINE MEDIANO"},{"c":"5004370001","d":"GUANTES DE NITRILO O POLIBUTADINE GRANDE"},{"c":"5004420001","d":"GUANTES DE LATEX TALLA CHICA CON TALCO"},{"c":"5004430001","d":"GUANTES DE LATEX TALLA MEDIANA CON TALCO"},{"c":"5004440001","d":"GUANTES DE LATEX TALLA GRANDE CON TALCO"},{"c":"5004450001","d":"MASCARAS PROTECTORAS KN95"},{"c":"5004730001","d":"GEL ANTISEPTICO PARA MANOS DE 950 ML A 1 LITRO"},{"c":"5004740001","d":"SOLUCION ANTISEPTICA DE CLORHEXIDINA DE 950 ML A 1 LITRO"},{"c":"5004830001","d":"BATA QUIRURGICA NO ESTERIL CHICA"},{"c":"5004840001","d":"BATA QUIRURGICA NO ESTERIL MEDIANA"},{"c":"5004850001","d":"BATA QUIRURGICA NO ESTERIL GRANDE"},{"c":"5004860001","d":"CUBREBOCA QUIRURGICO CON DOS CAPAS"},{"c":"5004870001","d":"MASCARA QUIRURGICA"},{"c":"5004880001","d":"MEDIO DE TRANSPORTE VIRAL UNIVERSAL. TUBO CON 3.0 ML"},{"c":"5005010001","d":"PRUEBA RÁPIDA DE DIAGNÓSTICO IN VITRO SARS-COV-2"},{"c":"5006890001","d":"LINEA DE MUESTREO"},{"c":"5006890002","d":"TRAMPA DE AGUA"},{"c":"5007020001","d":"TUBO ENDOTRAQUEAL C/GLOBO DEL 2.5"},{"c":"5007030001","d":"TUBO ENDOTRAQUEAL C/GLOBO DEL 3.0"},{"c":"5007040001","d":"TUBO ENDOTRAQUEAL C/GLOBO DEL 3.5"},{"c":"5007050001","d":"TUBO ENDOTRAQUEAL C/GLOBO DEL 4.5"},{"c":"5007090001","d":"TUBO ENDOTRAQUEAL C/ALMA DE ACERO C/GLOBO DEL 4.5"},{"c":"5007180001","d":"AGUJA ESPINAL PUNTA QUINCKE NO. 23, 0.50 X 90 MM."},{"c":"5007190001","d":"AGUJA ESPINAL PUNTA QUINCKE NO. 25, 0.50 X 90 MM."},{"c":"5013600001","d":"MASCARILLA FACIAL CON VALVULA NO 1, PEDIATRICA"},{"c":"5013600004","d":"MASCARILLA FACIAL CON VALVULA NO 4 ADULTO JOVEN"},{"c":"5013600005","d":"MASCARILLA FACIAL CON VALVULA NO 5 ADULTO"},{"c":"5013600006","d":"MASCARILLA FACIAL CON VALVULA NO 6 ADULTO GDE"},{"c":"5013610001","d":"PUNTAS NASALES PEDIÁTRICO"},{"c":"5013650001","d":"AGUJA ESPINAL, PUNTA TIPO WHITACRE CALIBRE 25 CORTA (46MM)"},{"c":"5013650002","d":"AGUJA ESPINAL, PUNTA TIPO WHITACRE CALIBRE 25 LARGA (46MM)"},{"c":"5015150001","d":"CIRCUITO ANESTÉSICO COMPLETO ADULTO"},{"c":"5015150002","d":"CIRCUITO ANESTÉSICO COMPLETO PEDIÁTRICO"},{"c":"5015150003","d":"CIRCUITO ANESTÉSICO COMPLETO NEONATAL"},{"c":"5015160001","d":"SPIROLOG FLOW SENSOR MARCA DRAGER"},{"c":"5015180001","d":"ELECTRODOS P/MONITORIZACIÓN CARDIACA ADULTO"},{"c":"5015180002","d":"ELECTRODOS P/MONITORIZACIÓN CARDIACA PEDIÁTRICO"},{"c":"5015200001","d":"DOMO TRANSDUCTOR PARA LINEA ARTERIAL"},{"c":"5015220001","d":"MASCARILLA LARINGEA NO. 1.0"},{"c":"5015220002","d":"MASCARILLA LARINGEA NO. 1.5"},{"c":"5015220003","d":"MASCARILLA LARINGEA NO. 2.0"},{"c":"5015220004","d":"MASCARILLA LARINGEA NO. 2.5"},{"c":"5015220005","d":"MASCARILLA LARINGEA NO. 3.0"},{"c":"5015220006","d":"MASCARILLA LARINGEA NO. 4.0"},{"c":"5015220007","d":"MASCARILLA LARINGEA NO. 5.0"},{"c":"5015540001","d":"MEDIOS DE CONTRASTE DE 300 MG I/ML, 200 ML"},{"c":"5015560003","d":"AGUJA ECOGÉNICA P/BLOQUEO DE NERVIOS CALIBRE 22 G X 50 MM"},{"c":"5271640269","d":"CARETA PROTECTORA TRANSPARENTE"}];
+
+const SIZES = [
+  {id:'grevil75', name:'Grevil 7x5 (70.4 × 50.6 mm)', w:70.4, h:50.6},
+  {id:'devil',    name:'Grevil Devil (51.4 × 25.6 mm)', w:51.4, h:25.6},
+  {id:'2x4',      name:'2 x 4 (50.8 × 101.6 mm)', w:50.8, h:101.6},
+  {id:'4x4',      name:'4 x 4 (101.6 × 101.6 mm)', w:101.6, h:101.6},
+  {id:'4x6',      name:'4 x 6 (101.6 × 152.4 mm)', w:101.6, h:152.4},
+  {id:'custom',   name:'Personalizado…', w:0, h:0},
+];
+
+/* ===== almacenamiento seguro ===== */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ toast('No se pudo guardar: ' + e.message); return false; } }
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
+const digits = s => String(s ?? '').replace(/\D/g,'');
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
+
+async function hash(txt){
+  const data = new TextEncoder().encode('etq::' + txt);
+  if (window.crypto && crypto.subtle){
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  let h = 2166136261; for (const b of data){ h ^= b; h = Math.imul(h, 16777619); } return 'f' + (h>>>0).toString(16);
+}
+
+/* ===== Usuarios / sesión ===== */
+async function users(){
+  let u = store.get('et_users', null);
+  if (!u || !u.length){ u = [{u:'admin', n:'Administrador', h: await hash('admin123'), a:1}]; store.set('et_users', u); }
+  return u;
+}
+let me = null;
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const u = $('#lu').value.trim().toLowerCase(), p = $('#lp').value;
+  const list = await users();
+  const h = await hash(p);
+  const found = list.find(x => x.u === u && x.h === h);
+  if (!found){ $('#lerr').textContent = 'Usuario o contraseña incorrectos'; $('#lp').value=''; $('#lp').focus(); return; }
+  try{ sessionStorage.setItem('et_session', found.u); }catch(e){}
+  enter(found);
+});
+function enter(user){
+  me = user; $('#lerr').textContent=''; $('#lp').value='';
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  $('#who').textContent = user.n + (user.a ? ' · Admin' : '');
+  $('#bUsers').classList.toggle('hidden', !user.a);
+  $('#bConfig').classList.toggle('hidden', !user.a);
+  search(); $('#q').focus();
+}
+$('#bLogout').onclick = () => { try{ sessionStorage.removeItem('et_session'); }catch(e){} me=null; $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#lu').focus(); };
+(async () => {
+  const list = await users();
+  if (list.length > 1 || list[0].h !== await hash('admin123')) $('#lhint').classList.add('hidden');
+  let s=null; try{ s = sessionStorage.getItem('et_session'); }catch(e){}
+  const u = s && list.find(x => x.u === s);
+  if (u) enter(u);
+})();
+
+/* --- administración de usuarios --- */
+async function renderUsers(){
+  const list = await users();
+  $('#uBody').innerHTML = list.map(x => `<tr><td>${esc(x.u)}</td><td>${esc(x.n)}</td><td>${x.a?'Administrador':'Capturista'}</td>
+    <td style="text-align:right">${x.u===me.u?'':`<button class="btn sm" data-del="${esc(x.u)}">Eliminar</button>`}</td></tr>`).join('');
+}
+$('#bUsers').onclick = () => { renderUsers(); $('#dlgUsers').showModal(); };
+$('#uBody').onclick = async e => {
+  const u = e.target.dataset.del; if (!u) return;
+  if (!confirm('¿Eliminar al usuario ' + u + '?')) return;
+  store.set('et_users', (await users()).filter(x => x.u !== u)); renderUsers();
+};
+$('#uForm').onsubmit = async e => {
+  e.preventDefault();
+  const u = $('#nu').value.trim().toLowerCase();
+  if (!/^[a-z0-9._-]{3,}$/.test(u)){ $('#uerr').textContent='Usuario: mínimo 3 caracteres (letras, números, . _ -)'; return; }
+  const list = await users();
+  const rec = {u, n:$('#nn').value.trim(), h:await hash($('#np').value), a:+$('#nr').value};
+  const i = list.findIndex(x => x.u === u); if (i>=0) list[i]=rec; else list.push(rec);
+  store.set('et_users', list); $('#uerr').textContent=''; e.target.reset(); renderUsers(); toast('Usuario guardado');
+};
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
+
+/* ===== Catálogo ===== */
+let CATALOGO = [];
+function loadCatalog(){
+  const c = store.get('et_catalogo', null);
+  CATALOGO = (c && c.length ? c : CATALOGO_BASE).map(x => ({...x, _k: digits(x.c), _d: norm(x.d)}));
+  $('#catInfo').textContent = `${CATALOGO.length} materiales cargados` + (c && c.length ? ' (personalizado)' : ' (catálogo original)');
+}
+loadCatalog();
+
+let mode = 'todo', selected = null;
+$('#seg').onclick = e => {
+  const m = e.target.dataset.m; if (!m) return;
+  mode = m; document.querySelectorAll('#seg button').forEach(b => b.classList.toggle('on', b.dataset.m===m));
+  $('#q').placeholder = m==='clave' ? 'Ej. 0600880652 o 060-088-0652' : m==='desc' ? 'Ej. apositos hidrocoloides' : 'Escribe la clave o la descripción…';
+  search(); $('#q').focus();
+};
+function highlight(text, words){
+  let out = esc(text);
+  if (!words.length) return out;
+  // resaltar ignorando acentos: mapear posiciones sobre el texto normalizado
+  const n = norm(text), marks = new Array(text.length).fill(false);
+  if (n.length === text.length) for (const w of words){ let i=-1; while((i=n.indexOf(w,i+1))>=0) for(let j=i;j<i+w.length;j++) marks[j]=true; }
+  else return out;
+  let s='', on=false;
+  for (let i=0;i<text.length;i++){ if(marks[i]!==on){ s+= marks[i]?'<mark>':'</mark>'; on=marks[i]; } s+=esc(text[i]); }
+  return s + (on?'</mark>':'');
+}
+let shown = [];
+function search(){
+  const raw = $('#q').value, qn = norm(raw), qd = digits(raw);
+  const words = qn.split(' ').filter(Boolean);
+  let r;
+  if (!qn) r = CATALOGO;
+  else r = CATALOGO.filter(x => {
+    const byK = qd && x._k.includes(qd);
+    const byD = words.every(w => x._d.includes(w));
+    return mode==='clave' ? byK : mode==='desc' ? byD : (byK || byD);
+  });
+  if (qd && mode!=='desc') r = r.slice().sort((a,b) => (b._k.startsWith(qd)) - (a._k.startsWith(qd)));
+  shown = r.slice(0, 200);
+  $('#count').textContent = r.length + ' resultado' + (r.length===1?'':'s') + (r.length>shown.length ? ` · mostrando ${shown.length}` : '');
+  $('#results').innerHTML = shown.length ? shown.map((x,i) => `<button class="res${selected&&selected.c===x.c?' sel':''}" data-i="${i}">
+      <div class="k"><span>${esc(x.c)}</span><span class="um">${esc(x.um||'PIEZA')}</span></div><div class="d">${mode==='clave'?esc(x.d):highlight(x.d, words)}</div></button>`).join('')
+    : '<div class="empty">Sin resultados</div>';
+}
+$('#q').addEventListener('input', search);
+$('#q').addEventListener('keydown', e => { if (e.key==='Enter' && shown.length){ select(shown[0]); } });
+$('#results').onclick = e => { const b = e.target.closest('.res'); if (b) select(shown[+b.dataset.i]); };
+
+function select(item){
+  selected = item;
+  $('#um').value = item.um || 'PIEZA';
+  document.querySelectorAll('.res').forEach(b => b.classList.toggle('sel', shown[+b.dataset.i]===item));
+  $('#bPrint').disabled = false; $('#bEdit').disabled = false; $('#bDel').disabled = false;
+  renderPreview();
+}
+
+/* ===== Configuración ===== */
+let cfg = Object.assign({alm:'ALMACEN ISSSTE', logo:null, size:'grevil75', cw:70.4, ch:50.6, rot:false, env:'ENVASE', um:'PIEZA', tipo:'master'}, store.get('et_cfg', {}));
+cfg.fs = Object.assign({d:100,a:100,t:100,u:100}, cfg.fs || {});
+if (cfg.bold === undefined) cfg.bold = true; if (!cfg.font) cfg.font = 'orig';
+function setTipo(t){
+  cfg.tipo = t; saveCfg();
+  document.querySelectorAll('#tipo button').forEach(b => b.classList.toggle('on', b.dataset.t===t));
+  $('#env').disabled = t==='ind';
+  $('#env').closest('.field').style.opacity = t==='ind' ? .45 : 1;
+  renderPreview();
+}
+$('#tipo').onclick = e => { const t = e.target.dataset.t; if (t) setTipo(t); };
+let pendingLogo;
+$('#bConfig').onclick = () => { $('#cfgAlm').value = cfg.alm; pendingLogo = cfg.logo; $('#cfgLogo').value=''; $('#dlgConfig').showModal(); };
+$('#cfgLogo').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const img = new Image(), rd = new FileReader();
+  rd.onload = () => { img.onload = () => { // reducir a 300px para no llenar el almacenamiento
+      const k = Math.min(1, 300/Math.max(img.width,img.height)), c = document.createElement('canvas');
+      c.width = img.width*k; c.height = img.height*k; c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      pendingLogo = c.toDataURL('image/png'); toast('Logo listo, presiona Guardar'); };
+    img.src = rd.result; };
+  rd.readAsDataURL(f);
+};
+$('#cfgLogoClear').onclick = () => { pendingLogo = null; $('#cfgLogo').value=''; toast('Logo quitado, presiona Guardar'); };
+$('#cfgSave').onclick = () => { cfg.alm = $('#cfgAlm').value; cfg.logo = pendingLogo; saveCfg(); renderPreview(); $('#dlgConfig').close(); toast('Configuración guardada'); };
+function saveCfg(){ store.set('et_cfg', cfg); }
+
+$('#catReset').onclick = () => { if(!confirm('¿Volver al catálogo original?')) return; try{localStorage.removeItem('et_catalogo');}catch(e){} loadCatalog(); search(); toast('Catálogo original restaurado'); };
+/* --- Lector de Excel (.xlsx) sin internet --- */
+async function zipReader(buf){
+  const dv = new DataView(buf), u8 = new Uint8Array(buf), td = new TextDecoder();
+  let e = u8.length - 22; while (e >= 0 && dv.getUint32(e, true) !== 0x06054b50) e--;
+  if (e < 0) throw new Error('El archivo no es un Excel (.xlsx) válido');
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const files = {};
+  for (let i = 0; i < n; i++){
+    const nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    files[td.decode(u8.subarray(p + 46, p + 46 + nl))] = {m: dv.getUint16(p + 10, true), size: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true)};
+    p += 46 + nl + xl + cl;
+  }
+  return async name => {
+    const f = files[name]; if (!f) return null;
+    const start = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true);
+    const data = u8.subarray(start, start + f.size);
+    if (f.m === 0) return td.decode(data);
+    if (!window.DecompressionStream) throw new Error('Este navegador no puede leer Excel. Usa Chrome o Edge actualizado, o guarda el archivo como CSV.');
+    return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+}
+async function readXlsx(buf){
+  const get = await zipReader(buf), xml = s => new DOMParser().parseFromString(s, 'application/xml');
+  const wb = xml(await get('xl/workbook.xml'));
+  const rid = wb.getElementsByTagName('sheet')[0].getAttribute('r:id');
+  let target = 'worksheets/sheet1.xml';
+  const rels = await get('xl/_rels/workbook.xml.rels');
+  if (rels) for (const r of xml(rels).getElementsByTagName('Relationship')) if (r.getAttribute('Id') === rid) target = r.getAttribute('Target');
+  const path = target.startsWith('/') ? target.slice(1) : 'xl/' + target;
+  const sstX = await get('xl/sharedStrings.xml'), sst = [];
+  if (sstX) for (const si of xml(sstX).getElementsByTagName('si')) sst.push([...si.getElementsByTagName('t')].filter(t => t.parentNode.nodeName !== 'rPh').map(t => t.textContent).join(''));
+  const colIdx = ref => { let n = 0; for (const ch of ref.replace(/\d+/g,'')) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; };
+  const rows = [];
+  for (const row of xml(await get(path)).getElementsByTagName('row')){
+    const r = [];
+    for (const c of row.getElementsByTagName('c')){
+      const t = c.getAttribute('t'), v = c.getElementsByTagName('v')[0];
+      let val = t === 'inlineStr' ? c.textContent : v ? v.textContent : '';
+      if (t === 's') val = sst[+val] ?? '';
+      else if (!t && /e/i.test(val) && !isNaN(val)) val = Number(val).toFixed(0);
+      r[colIdx(c.getAttribute('r'))] = val;
+    }
+    rows.push([...r].map(x => x ?? ''));
+  }
+  return rows;
+}
+function readCsv(text){
+  const first = text.split(/\r?\n/)[0], sep = (first.match(/;/g)||[]).length > (first.match(/,/g)||[]).length ? ';' : first.includes('\t') && !first.includes(',') ? '\t' : ',';
+  const rows = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if (q){ if (ch === '"'){ if (text[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === sep){ row.push(cur); cur = ''; }
+    else if (ch === '\n' || ch === '\r'){ if (ch === '\r' && text[i+1] === '\n') i++; row.push(cur); rows.push(row); row = []; cur = ''; }
+    else cur += ch;
+  }
+  if (cur || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+$('#catFile').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try{
+    let rows;
+    if (/\.csv$/i.test(f.name)){
+      const buf = await f.arrayBuffer();
+      let text; try{ text = new TextDecoder('utf-8', {fatal:true}).decode(buf); }catch(x){ text = new TextDecoder('windows-1252').decode(buf); }
+      rows = readCsv(text.replace(/^﻿/, ''));
+    } else rows = await readXlsx(await f.arrayBuffer());
+    // buscar la fila de encabezados (primeras 10 filas)
+    let hi = rows.slice(0, 10).findIndex(r => r.some(h => norm(h).includes('CLAVE')));
+    if (hi < 0) throw new Error('No encontré el encabezado "Clave". El archivo debe tener columnas: Clave, Descripción, U/M');
+    const head = rows[hi].map(norm);
+    const ic = head.findIndex(h => h.includes('CLAVE'));
+    const id = head.findIndex(h => h.includes('DESCRIP'));
+    const iu = head.findIndex(h => ['U/M','UM','U.M.','U.M','UNIDAD','UNIDAD DE MEDIDA'].includes(h) || h.startsWith('U/M') || h.startsWith('UNIDAD'));
+    if (id < 0) throw new Error('No encontré la columna "Descripción"');
+    const out = [], seen = new Set(); let sinUM = 0;
+    for (const r of rows.slice(hi + 1)){
+      let c = String(r[ic] ?? '').trim(); const d = String(r[id] ?? '').replace(/\s+/g,' ').trim();
+      if (!c || !d) continue;
+      if (/^\d+$/.test(c) && c.length < 10) c = c.padStart(10,'0');
+      if (seen.has(c)) continue; seen.add(c);
+      const um = iu >= 0 ? String(r[iu] ?? '').trim().toUpperCase() : '';
+      if (!um) sinUM++;
+      out.push(um ? {c, d, um} : {c, d});
+    }
+    if (!out.length) throw new Error('El archivo no tiene materiales');
+    if (store.set('et_catalogo', out)){
+      loadCatalog(); search();
+      alert(`${out.length} materiales importados.` + (iu < 0 ? '\nNo se encontró la columna U/M: se usará PIEZA.' : sinUM ? `\n${sinUM} sin U/M: se usará PIEZA.` : ''));
+    }
+  }catch(err){ alert(err.message); }
+  e.target.value='';
+};
+$('#catTpl').onclick = () => {
+  const csv = '﻿Clave,Descripción,U/M\r\n0600880652,APÓSITOS HIDROCOLOIDES 10 X 10 CM,PIEZA\r\n';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = 'plantilla_catalogo.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+/* ===== Tamaño / opciones ===== */
+$('#size').innerHTML = SIZES.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+$('#size').value = cfg.size; $('#cw').value = cfg.cw; $('#ch').value = cfg.ch; $('#rot').checked = !!cfg.rot;
+$('#env').value = cfg.env; $('#um').value = cfg.um;
+setTipo(cfg.tipo);
+function dims(){
+  const s = SIZES.find(x => x.id === $('#size').value) || SIZES[0];
+  let w = s.id==='custom' ? +$('#cw').value || 70.4 : s.w, h = s.id==='custom' ? +$('#ch').value || 50.6 : s.h;
+  return {pw:w, ph:h, rot:$('#rot').checked};
+}
+function onOpts(){
+  const custom = $('#size').value==='custom';
+  $('#customW').classList.toggle('hidden', !custom); $('#customH').classList.toggle('hidden', !custom);
+  Object.assign(cfg, {size:$('#size').value, cw:+$('#cw').value, ch:+$('#ch').value, rot:$('#rot').checked, env:$('#env').value, um:$('#um').value});
+  saveCfg(); renderPreview();
+}
+['#size','#cw','#ch','#rot'].forEach(s => $(s).addEventListener('change', onOpts));
+['#env','#um','#cw','#ch'].forEach(s => $(s).addEventListener('input', onOpts));
+// Sugerir rotación para etiquetas más altas que anchas
+$('#size').addEventListener('change', () => { const d = dims(); $('#rot').checked = d.ph > d.pw * 1.15; onOpts(); });
+
+const FONTS = [['orig','Original'],["Arial,Helvetica,sans-serif",'Arial'],["'Arial Black',Arial,sans-serif",'Arial Black'],["Calibri,Carlito,Arial,sans-serif",'Calibri'],["Verdana,Geneva,sans-serif",'Verdana'],["Tahoma,Geneva,sans-serif",'Tahoma'],["'Trebuchet MS',Arial,sans-serif",'Trebuchet MS'],["'Segoe UI',Arial,sans-serif",'Segoe UI'],["Impact,'Arial Narrow',sans-serif",'Impact'],["'Times New Roman',Times,serif",'Times New Roman'],["Georgia,serif",'Georgia'],["'Courier New',monospace",'Courier New']];
+$('#font').innerHTML = FONTS.map(x => `<option value="${x[0]}">${x[1]}</option>`).join('');
+$('#font').value = cfg.font; if ($('#font').value !== cfg.font) cfg.font = 'orig', $('#font').value = 'orig';
+$('#bold').checked = cfg.bold;
+$('#font').addEventListener('change', () => { cfg.font = $('#font').value; saveCfg(); renderPreview(); });
+$('#bold').addEventListener('change', () => { cfg.bold = $('#bold').checked; saveCfg(); renderPreview(); });
+const FSK = {d:'#fs_d', a:'#fs_a', t:'#fs_t', u:'#fs_u'};
+function syncFs(){ for (const k in FSK){ $(FSK[k]).value = cfg.fs[k]; $('#v_'+k).textContent = cfg.fs[k]+'%'; } }
+for (const k in FSK) $(FSK[k]).addEventListener('input', () => { cfg.fs[k] = +$(FSK[k]).value; $('#v_'+k).textContent = cfg.fs[k]+'%'; saveCfg(); renderPreview(); });
+$('#fsReset').onclick = () => { cfg.fs = {d:100,a:100,t:100,u:100}; syncFs(); saveCfg(); renderPreview(); };
+syncFs();
+// palabras con guion o diagonal (28-34, 1/2) no se parten
+const wrapNb = s => s.replace(/\S*[-\/]\S*/g, m => `<span class="nb">${m}</span>`);
+/* ===== Etiqueta ===== */
+const LOGO_DEFAULT = `<svg class="logo-ph" viewBox="0 0 60 34" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="1" width="58" height="32" rx="3" fill="none" stroke="#999" stroke-dasharray="3 2"/><text x="30" y="21" font-family="Arial" font-size="10" text-anchor="middle" fill="#999">LOGO</text></svg>`;
+function labelHTML(item, pw, ph, rot, unit){
+  // pw/ph: tamaño del papel; si rot, el contenido se dibuja en ph x pw y se gira 90°
+  const cw = rot ? ph : pw, chh = rot ? pw : ph;
+  const logo = cfg.logo ? `<img src="${cfg.logo}" alt="">` : LOGO_DEFAULT;
+  const inner = `<div class="lbl-in${cfg.tipo==='ind'?' ind':''}${cfg.bold?' bold':''}${cfg.font!=='orig'?' cf':''}" style="--ff:${cfg.font};--ka:${cfg.fs.a/100};--kt:${cfg.fs.t/100};--ku:${cfg.fs.u/100}">
+      <div class="l-alm">${esc(cfg.alm)}</div>
+      <div class="l-head">
+        <div class="l-logo">${logo}</div>
+        <div class="l-bar"><span class="l-mat">MAT.</span><span class="l-num">${esc(item.c)}</span></div>
+      </div>
+      <div class="l-dt">DESCRIPCION</div>
+      <div class="l-desc"><span>${wrapNb(esc(item.d))}</span></div>
+      <div class="l-foot"><span class="l-env">${esc($('#env').value)}</span><span class="l-um">U/M:</span><span class="l-umv">${esc($('#um').value)}</span></div>
+    </div>`;
+  const content = rot
+    ? `<div class="lbl lbl-rot" style="width:${cw}${unit};height:${chh}${unit};transform:translateX(${pw}${unit}) rotate(90deg)">${inner}</div>`
+    : inner;
+  return `<div class="lbl" style="width:${pw}${unit};height:${ph}${unit}">${content}</div>`;
+}
+// Ajusta el tamaño de letra de la descripción y del número para que quepan
+function fit(root){
+  const span = root.querySelector('.l-desc span'), box = root.querySelector('.l-desc');
+  // en etiquetas muy anchas (ej. Grevil Devil) la descripción puede crecer más
+  const inn = root.querySelector('.lbl-in'), ar = inn.clientWidth / inn.clientHeight;
+  const kd = (cfg.fs.d || 100) / 100, pad = parseFloat(getComputedStyle(box).paddingLeft) * 2;
+  let f = Math.min(2.8, Math.max(2, ar / 1.5 * 1.4)) * kd; span.style.setProperty('--fd', f);
+  // "bad" = no cabe: se pasa de alto, o alguna palabra es más ancha que la caja (nunca se parten palabras)
+  const bad = () => span.offsetHeight > box.clientHeight * .84 || box.scrollHeight > box.clientHeight + 1 || span.scrollWidth > box.clientWidth + 1 || span.offsetWidth > box.clientWidth - pad + 1;
+  while (f > 0.25 && bad()){ f -= 0.04; span.style.setProperty('--fd', f); }
+  // pie (envase / U/M): que no se desborde
+  const ft = root.querySelector('.l-foot'); let ku = (cfg.fs.u || 100) / 100;
+  inn.style.setProperty('--ku', ku);
+  while (ku > 0.4 && ft.scrollWidth > ft.clientWidth + 1){ ku -= .05; inn.style.setProperty('--ku', ku); }
+  const num = root.querySelector('.l-num'), bar = root.querySelector('.l-bar');
+  num.style.transform=''; const over = num.getBoundingClientRect().right - bar.getBoundingClientRect().right;
+  let nf = 1; if (over > 0){ nf = Math.max(.5, (num.offsetWidth - over - 4) / num.offsetWidth); num.style.transform=`scaleX(${nf})`; num.style.transformOrigin='left center'; }
+  // verificación final (el diseño puede moverse al ajustar el pie y el número)
+  while (f > 0.25 && bad()){ f -= 0.04; span.style.setProperty('--fd', f); }
+  return {f, nf, ku};
+}
+let lastFit = {f:1, nf:1};
+function renderPreview(){
+  if (!selected){ return; }
+  $('#selInfo').textContent = selected.c + ' · ' + selected.d;
+  const {pw, ph, rot} = dims();
+  const box = $('#preview'), maxW = Math.max(200, box.clientWidth - 60), maxH = Math.max(180, box.clientHeight - 80);
+  const k = Math.min(maxW/pw, maxH/ph, 7);   // px por mm
+  box.innerHTML = labelHTML(selected, +(pw*k).toFixed(1), +(ph*k).toFixed(1), rot, 'px') +
+    `<div class="cap">Vista previa · ${pw} × ${ph} mm${rot?' · girada 90°':''}</div>`;
+  lastFit = fit(box);
+}
+window.addEventListener('resize', () => selected && renderPreview());
+
+/* ===== Modificar / eliminar material ===== */
+function persistCat(){ return store.set('et_catalogo', CATALOGO.map(({c,d,um}) => um ? {c,d,um} : {c,d})); }
+$('#bEdit').onclick = () => {
+  if (!selected) return;
+  $('#mc').value = selected.c; $('#mdesc').value = selected.d; $('#mu').value = selected.um || 'PIEZA'; $('#mErr').textContent = '';
+  $('#dlgMat').showModal(); $('#mdesc').focus();
+};
+$('#mSave').onclick = () => {
+  const c = digits($('#mc').value), d = $('#mdesc').value.trim().replace(/\s+/g,' '), um = $('#mu').value.trim().toUpperCase() || 'PIEZA', err = $('#mErr');
+  if (c.length !== 10) return err.textContent = 'La clave debe tener 10 dígitos.';
+  if (!d) return err.textContent = 'Escribe la descripción.';
+  if (c !== selected.c && CATALOGO.some(x => x.c === c)) return err.textContent = 'Ya existe un material con esa clave.';
+  const i = CATALOGO.indexOf(selected); if (i < 0) return err.textContent = 'No se encontró el material.';
+  CATALOGO[i] = {c, d, um, _k: digits(c), _d: norm(d)};
+  if (!persistCat()) return;
+  loadCatalog(); selected = CATALOGO.find(x => x.c === c); search(); select(selected);
+  $('#dlgMat').close(); toast('Material actualizado');
+};
+$('#bDel').onclick = () => {
+  if (!selected) return;
+  if (!confirm(`¿Eliminar este material del catálogo?\n\n${selected.c} · ${selected.d}`)) return;
+  CATALOGO = CATALOGO.filter(x => x !== selected);
+  if (!persistCat()) return;
+  loadCatalog(); selected = null;
+  $('#preview').innerHTML = '<div class="empty">Selecciona un material para ver la etiqueta</div>';
+  $('#selInfo').textContent = ''; $('#bPrint').disabled = $('#bEdit').disabled = $('#bDel').disabled = true;
+  search(); toast('Material eliminado');
+};
+
+/* ===== Imprimir ===== */
+$('#bPrint').onclick = () => {
+  if (!selected) return;
+  const {pw, ph, rot} = dims();
+  const n = Math.min(500, Math.max(1, parseInt($('#copies').value) || 1));
+  $('#pageStyle').textContent = `@page{size:${pw}mm ${ph}mm;margin:0}`;
+  const one = labelHTML(selected, pw, ph, rot, 'mm');
+  $('#printArea').innerHTML = one.repeat(n);
+  // aplicar el mismo ajuste de letra calculado en la vista previa
+  $('#printArea').querySelectorAll('.lbl-in').forEach(el => {
+    el.querySelector('.l-desc span').style.setProperty('--fd', lastFit.f); if (lastFit.ku) el.style.setProperty('--ku', lastFit.ku);
+    if (lastFit.nf < 1){ const num = el.querySelector('.l-num'); num.style.transform = `scaleX(${lastFit.nf})`; num.style.transformOrigin='left center'; }
+  });
+  setTimeout(() => { window.print(); }, 50);
+};
+window.addEventListener('afterprint', () => { $('#printArea').innerHTML=''; });
+</script>
+</body>
+</html>
