@@ -521,7 +521,7 @@ $('#tipo').onclick = e => { const t = e.target.dataset.t; if (t) setTipo(t); };
 let pendingLogo;
 $('#bConfig').onclick = () => {
   $('#cfgAlm').value = cfg.alm; pendingLogo = cfg.logo; $('#cfgLogo').value='';
-  const cc=cloudSettings.get(); $('#cloudUrl').value=cc.url||''; $('#cloudKey').value=cc.key||'';
+  const cc=cloudConfig() || {}; $('#cloudUrl').value=cc.url||''; $('#cloudKey').value=cc.key||'';
   $('#cloudStatus').textContent=cc.url&&cc.key?'Configuración de nube guardada.':'Nube sin configurar.';
   $('#dlgConfig').showModal();
 };
