@@ -279,6 +279,17 @@
       </div>
       <div class="note" style="margin-top:6px">El Excel (.xlsx) o CSV debe tener las columnas <b>Clave</b>, <b>Descripción</b> y <b>U/M</b>. Funciona sin internet. Si un material no tiene U/M se usa PIEZA.</div>
     </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <div class="field">
+      <label>Sincronización en la nube (Supabase)</label>
+      <input id="cloudUrl" type="url" placeholder="https://tu-proyecto.supabase.co">
+    </div>
+    <div class="field">
+      <label>Clave pública anon de Supabase</label>
+      <input id="cloudKey" type="password" placeholder="sb_publishable_... o anon key">
+    </div>
+    <div class="note">Al conectar, catálogo, logotipo, configuración y usuarios se compartirán entre los dispositivos que abran este enlace. Requiere crear la tabla indicada en el archivo de instrucciones. La sincronización usa la nube; localStorage queda como respaldo.</div>
+    <div class="note" id="cloudStatus" style="margin-top:8px"></div>
   </div>
   <div class="dlg-f"><button class="btn primary" id="cfgSave">Guardar</button></div>
 </dialog>
@@ -299,10 +310,68 @@ const SIZES = [
 ];
 
 /* ===== almacenamiento seguro ===== */
+const CLOUD_KEYS = ['et_users','et_catalogo','et_cfg'];
+// Pega aquí la URL y la clave pública (anon/publishable) de tu proyecto.
+ // Al publicarlas en GitHub Pages serán visibles para cualquier visitante.
+const CLOUD_DEFAULT = {url:'https://bujeaccrecjpjulbnbkob.supabase.co', key:'sb_publishable_6cCoOQfx8Ra0Fr63C8LzFQ_pRLQamL3'};
+const cloudSettings = {
+  get(){ try{return JSON.parse(localStorage.getItem('et_cloud_settings')||'{}')}catch(e){return {}} },
+  set(v){ localStorage.setItem('et_cloud_settings', JSON.stringify(v)); }
+};
+let cloudBusy = false, cloudReady = false, cloudPoll = null;
 const store = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d : JSON.parse(v); }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ toast('No se pudo guardar: ' + e.message); return false; } }
+  set(k, v){
+    try{ localStorage.setItem(k, JSON.stringify(v)); }
+    catch(e){ toast('No se pudo guardar: ' + e.message); return false; }
+    if(CLOUD_KEYS.includes(k)) cloudWrite(k,v);
+    return true;
+  }
 };
+function cloudConfig(){ const saved=cloudSettings.get(); const c=(saved.url&&saved.key)?saved:CLOUD_DEFAULT; return c.url && c.key ? c : null; }
+async function cloudRequest(path, options={}){
+  const c=cloudConfig(); if(!c) throw new Error('Configura Supabase primero.');
+  const res=await fetch(c.url.replace(/\/$/,'')+'/rest/v1/'+path,{
+    ...options, headers:{apikey:c.key,Authorization:'Bearer '+c.key,'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal',...(options.headers||{})}
+  });
+  if(!res.ok) throw new Error((await res.text()).slice(0,240)||('HTTP '+res.status));
+  return res;
+}
+async function cloudWrite(k,v){
+  if(!cloudConfig()) return;
+  try{ await cloudRequest('app_state?on_conflict=key',{method:'POST',body:JSON.stringify({key:k,value:v,updated_at:new Date().toISOString()})}); }
+  catch(e){ console.warn('Error de sincronización:',e); toast('Guardado en este dispositivo; error al sincronizar con la nube.'); }
+}
+async function cloudPull(initial=false){
+  if(!cloudConfig() || cloudBusy) return;
+  cloudBusy=true;
+  try{
+    const res=await cloudRequest('app_state?select=key,value');
+    const rows=await res.json(); let changed=false;
+    if(initial && rows.length===0){
+      // Primera conexión: publica el estado local existente como estado inicial.
+      for(const k of CLOUD_KEYS){ const v=store.get(k,null); if(v!==null) await cloudWrite(k,v); }
+    }
+    for(const row of rows){
+      if(!CLOUD_KEYS.includes(row.key)) continue;
+      const remote=JSON.stringify(row.value), local=localStorage.getItem(row.key);
+      if(local!==remote){ localStorage.setItem(row.key,remote); changed=true; }
+    }
+    cloudReady=true;
+    const status=$('#cloudStatus'); if(status) status.textContent='Nube conectada. Los cambios se sincronizan automáticamente.';
+    if(changed && !initial){ toast('Se recibieron cambios de otro dispositivo. Actualizando…'); setTimeout(()=>location.reload(),700); }
+  }catch(e){
+    console.warn('No se pudo leer la nube:',e);
+    const status=$('#cloudStatus'); if(status) status.textContent='No se pudo conectar: '+e.message;
+    if(initial) toast('No se pudo sincronizar. Se usará la información local.');
+  }finally{ cloudBusy=false; }
+}
+function startCloudSync(){
+  if(cloudPoll) clearInterval(cloudPoll);
+  if(!cloudConfig()) return;
+  cloudPull(true);
+  cloudPoll=setInterval(()=>cloudPull(false),7000);
+}
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim();
@@ -317,6 +386,9 @@ async function hash(txt){
   }
   let h = 2166136261; for (const b of data){ h ^= b; h = Math.imul(h, 16777619); } return 'f' + (h>>>0).toString(16);
 }
+
+window.addEventListener('focus',()=>cloudPull(false));
+window.addEventListener('online',()=>cloudPull(false));
 
 /* ===== Usuarios / sesión ===== */
 async function users(){
@@ -345,6 +417,8 @@ function enter(user){
 }
 $('#bLogout').onclick = () => { try{ sessionStorage.removeItem('et_session'); }catch(e){} me=null; $('#app').classList.add('hidden'); $('#login').classList.remove('hidden'); $('#lu').focus(); };
 (async () => {
+  await cloudPull(true);
+  startCloudSync();
   const list = await users();
   if (list.length > 1 || list[0].h !== await hash('admin123')) $('#lhint').classList.add('hidden');
   let s=null; try{ s = sessionStorage.getItem('et_session'); }catch(e){}
@@ -445,7 +519,12 @@ function setTipo(t){
 }
 $('#tipo').onclick = e => { const t = e.target.dataset.t; if (t) setTipo(t); };
 let pendingLogo;
-$('#bConfig').onclick = () => { $('#cfgAlm').value = cfg.alm; pendingLogo = cfg.logo; $('#cfgLogo').value=''; $('#dlgConfig').showModal(); };
+$('#bConfig').onclick = () => {
+  $('#cfgAlm').value = cfg.alm; pendingLogo = cfg.logo; $('#cfgLogo').value='';
+  const cc=cloudSettings.get(); $('#cloudUrl').value=cc.url||''; $('#cloudKey').value=cc.key||'';
+  $('#cloudStatus').textContent=cc.url&&cc.key?'Configuración de nube guardada.':'Nube sin configurar.';
+  $('#dlgConfig').showModal();
+};
 $('#cfgLogo').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   const img = new Image(), rd = new FileReader();
@@ -457,7 +536,18 @@ $('#cfgLogo').onchange = e => {
   rd.readAsDataURL(f);
 };
 $('#cfgLogoClear').onclick = () => { pendingLogo = null; $('#cfgLogo').value=''; toast('Logo quitado, presiona Guardar'); };
-$('#cfgSave').onclick = () => { cfg.alm = $('#cfgAlm').value; cfg.logo = pendingLogo; saveCfg(); renderPreview(); $('#dlgConfig').close(); toast('Configuración guardada'); };
+$('#cfgSave').onclick = async () => {
+  cfg.alm = $('#cfgAlm').value; cfg.logo = pendingLogo; saveCfg();
+  const url=$('#cloudUrl').value.trim().replace(/\/$/,'');
+  const key=$('#cloudKey').value.trim();
+  if((url && !key)||(!url && key)){ alert('Para conectar Supabase debes proporcionar tanto la URL como la clave pública.'); return; }
+  cloudSettings.set(url&&key?{url,key}:{});
+  if(url&&key){
+    try{ await cloudPull(true); startCloudSync(); toast('Configuración guardada. Nube conectada.'); }
+    catch(e){ toast('Configuración guardada localmente; revisa Supabase.'); }
+  }else{ if(cloudPoll) clearInterval(cloudPoll); cloudPoll=null; toast('Sincronización en nube desactivada.'); }
+  renderPreview(); $('#dlgConfig').close();
+};
 function saveCfg(){ store.set('et_cfg', cfg); }
 
 $('#catReset').onclick = () => { if(!confirm('¿Volver al catálogo original?')) return; try{localStorage.removeItem('et_catalogo');}catch(e){} loadCatalog(); search(); toast('Catálogo original restaurado'); };
